@@ -24,7 +24,7 @@
 
   <div class="callout colab">
     <span class="t">이 장의 결과물</span>
-    학습된 <strong>mAb-GATED</strong> 모델 + 성능표(실제 연구: Test MRR <strong>0.8953</strong>, H@1 <strong>0.7986</strong>, H@3 <strong>0.9874</strong>).
+    학습된 <strong>mAb-GATED</strong> 모델 + 성능표(정본 초록: Test n=1,231, Hits@1 <strong>84.7%</strong>, MRR <strong>0.884</strong>).
     베이스라인을 크게 앞섭니다. (GPU 런타임 권장)
   </div>
 
@@ -55,17 +55,17 @@
     </svg>
   </section>
   <div class="callout note">
-    <span class="t">‘사분면 안에서’ 맞히기</span>
-    아무 노드나 후보로 두면 너무 쉽습니다. 그래서 <strong>같은 하위범주</strong>(물리 12 / 화학 9 / 생물 11개 후보) 안에서
-    정답을 1등으로 올리도록 합니다. 더 현실적인 난이도죠. 예측 대상은 <strong>32개 표준 안정성 노드</strong>입니다.
+    <span class="t">‘같은 범주 안에서’ 맞히기</span>
+    아무 노드나 후보로 두면 너무 쉽습니다. 그래서 <strong>같은 하위범주(물리·화학·생물)</strong> 안에서
+    정답을 1등으로 올리도록 합니다. 예측 대상은 <strong>32개 표준 타깃</strong>을 <strong>15개 공식 지표(물리 4·화학 5·생물 6)</strong>로 정리한 것입니다.
   </div>
 
   <h2>2. 이름 풀이와 구조</h2>
   <p>이름 <strong>GATED</strong> = <strong>G</strong>raph-<strong>A</strong>ware <strong>T</strong>ransformer with <strong>E</strong>ncoder-<strong>D</strong>ecoder.
-     네 부품이 순서대로 이어집니다(총 <strong>약 186만 개</strong> 파라미터, 임베딩 차원 D=128).</p>
+     네 부품이 순서대로 이어집니다(총 <strong>약 320만(3.2M) 파라미터</strong>, 임베딩 차원 D=128).</p>
   <div class="card"><div class="steps">
     <div class="step"><div class="n">1</div><div><h4>임베딩 — PubMedBERT로 시작</h4><p>각 노드 이름을 생의학 언어모델로 768차원 → 128차원으로 투영해 초기화. <strong>의미가 가까운 노드는 가까운 자리에서 출발</strong>합니다.</p></div></div>
-    <div class="step"><div class="n">2</div><div><h4>GAT — 그래프 맥락 주입</h4><p>전체 지식그래프(엣지 인덱스 [2, 90,450], 정·역방향)를 어텐션으로 이웃 정보를 모음.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>GAT — 그래프 맥락 주입</h4><p>전체 지식그래프(<strong>8,670 노드·32,939 엣지</strong>, 정·역방향)를 어텐션으로 이웃 정보를 모음.</p></div></div>
     <div class="step"><div class="n">3</div><div><h4>Transformer Encoder</h4><p>입력 토큰들끼리 self-attention → 평균 풀링으로 맥락 벡터(128차원).</p></div></div>
     <div class="step"><div class="n">4</div><div><h4>Transformer Decoder</h4><p>cross-attention으로 예측 벡터 생성 → 후보 노드별 점수(logits) 출력.</p></div></div>
   </div></div>
@@ -124,52 +124,36 @@
     <strong>MRR</strong>(정답 순위의 역수 평균)과 <strong>Hits@k</strong>(상위 k 안에 정답이 든 비율). 1에 가까울수록 좋습니다.</div>
 
   <h2>6. 결과 — 베이스라인을 크게 앞선다</h2>
-  <p>실제 연구(GPT-4o-mini 엣지, test n=513)의 성능입니다.</p>
+  <p>정본 초록의 성능입니다(하위범주 제한 프로토콜, test n=1,231).</p>
   <div class="tablewrap"><table>
-    <thead><tr><th>모델</th><th>MRR</th><th>Hits@1</th><th>Hits@3</th></tr></thead>
+    <thead><tr><th>모델</th><th>MRR</th><th>Hits@1</th></tr></thead>
     <tbody>
-      <tr><td>Random</td><td>0.278</td><td>—</td><td>—</td></tr>
-      <tr><td>Frequency</td><td>0.637</td><td>0.454</td><td>—</td></tr>
-      <tr><td>DistMult</td><td>0.698</td><td>0.555</td><td>—</td></tr>
-      <tr><td><strong>mAb-GATED</strong></td><td><strong>0.8953</strong></td><td><strong>0.7986</strong></td><td><strong>0.9874</strong></td></tr>
+      <tr><td>Frequency</td><td>0.557</td><td>—</td></tr>
+      <tr><td>DistMult</td><td>0.588</td><td>—</td></tr>
+      <tr><td><strong>mAb-GATED</strong></td><td><strong>0.884</strong></td><td><strong>84.7%</strong></td></tr>
     </tbody>
   </table></div>
-  <p>MRR 0.8953은 <strong>정답이 평균적으로 1~2등 안에 든다</strong>는 뜻이고, H@3 0.9874는 <strong>98.7%의 경우 정답이 상위 3개 안</strong>에 있다는 뜻입니다. 빈도 베이스라인 대비 <strong>+40.6%</strong>, DistMult 대비 <strong>+28.4%</strong> 향상.</p>
+  <p>MRR 0.884는 <strong>정답이 평균적으로 1~2등 안에 든다</strong>는 뜻입니다. 빈도(0.557)·DistMult(0.588) 베이스라인을 큰 폭으로 앞섭니다.</p>
 
-  <h3>하위범주별로 보면</h3>
+  <h3>하위범주별로 보면 (test)</h3>
   <div class="tablewrap"><table>
-    <thead><tr><th>하위범주</th><th>후보 수</th><th>MRR</th><th>H@1</th><th>(랜덤 MRR)</th></tr></thead>
+    <thead><tr><th>하위범주</th><th>n</th><th>Hits@1</th><th>MRR</th></tr></thead>
     <tbody>
-      <tr><td><span class="chip stab">물리 physical</span></td><td>12</td><td><strong>0.9952</strong></td><td>0.9946</td><td>0.259</td></tr>
-      <tr><td><span class="chip stab">화학 chemical</span></td><td>9</td><td>0.9520</td><td>0.9200</td><td>0.314</td></tr>
-      <tr><td><span class="chip stab">생물 biological</span></td><td>11</td><td>0.7817</td><td>0.5635</td><td>0.275</td></tr>
+      <tr><td><span class="chip stab">물리 physical</span></td><td>612</td><td>87.9%</td><td>0.896</td></tr>
+      <tr><td><span class="chip stab">화학 chemical</span></td><td>292</td><td><strong>99.0%</strong></td><td><strong>0.993</strong></td></tr>
+      <tr><td><span class="chip stab">생물 biological</span></td><td>327</td><td>65.8%</td><td>0.763</td></tr>
     </tbody>
   </table></div>
-  <p><strong>물리적 안정성(응집·점도·입자) 예측이 거의 완벽</strong>합니다 — SC 전환의 가장 큰 걸림돌이 바로 이 영역이라 임상적으로 의미가 큽니다. 생물학적 안정성은 메커니즘이 더 복잡해 상대적으로 어렵습니다.</p>
+  <p><strong>화학적 안정성(산화·탈아미드화·단편화) 예측이 거의 완벽</strong>합니다 — 후기 제형 개발에서 의사결정 지원이 가장 실효적인 영역이죠. <strong>물리적 안정성(응집·점도)</strong>도 87.9%로 SC 전환의 가장 큰 걸림돌을 잘 잡아냅니다. 생물학적 안정성은 문헌에서 과소대표되어 상대적으로 어렵습니다.</p>
 
-  <h2>7. 버전 비교 — GPT-4o-mini vs GPT-5-mini</h2>
-  <p>
-    추출 모델을 <strong>GPT-5-mini</strong>로 바꿔 파이프라인 전체를 다시 돌리면, 한 논문에서 더 풍부한 관계를 뽑아
-    엣지가 16,019 → <strong>32,939</strong>개로 늘고, 모델 성능도 향상됩니다.
-  </p>
-  <div class="tablewrap"><table>
-    <thead><tr><th>지표</th><th>4o-mini</th><th>5-mini</th><th>변화</th></tr></thead>
-    <tbody>
-      <tr><td>고유 엣지</td><td>16,019</td><td>32,939</td><td>+106%</td></tr>
-      <tr><td>논문당 관계 수</td><td>2.7</td><td>7.7</td><td>2.8배</td></tr>
-      <tr><td>Overall MRR</td><td>0.8953</td><td><strong>0.9213</strong></td><td>+0.026</td></tr>
-      <tr><td>Overall H@1</td><td>79.86%</td><td><strong>89.72%</strong></td><td>+9.86%p</td></tr>
-    </tbody>
-  </table></div>
-  <div class="callout note"><span class="t">트레이드오프</span>
-    5-mini는 화학·생물 예측이 뚜렷이 좋아졌지만, 관계가 다양해지며 <strong>물리는 거의-완벽에서 다소 하락</strong>(H@1 99.5%→87.9%)했습니다.
-    데이터가 풍부해질수록 과제 자체가 어려워진 결과입니다. (전체 비교표는 병합 논문 <em>Appendix A</em> 참고)</div>
+  <h2>7. 추출 모델 버전에 따른 차이</h2>
+  <p>추출에 쓴 생성형 AI 모델(GPT-4o-mini ↔ GPT-5-mini)에 따라 엣지 수·관계 분포·성능이 달라집니다. 정본 시스템은 <strong>정밀도 우선(precision-first) 필터</strong>로 5,576편 → <strong>32,939 엣지(8,670 노드)</strong>를 사용합니다. 두 버전의 단계별 비교표는 병합 논문 <em>Appendix A</em>에 정리돼 있습니다.</p>
 
   <h2>오늘의 마무리</h2>
   <ul>
     <li><strong>하위범주 제한 빈칸 채우기</strong>로 인과 패턴을 학습했습니다.</li>
-    <li><strong>PubMedBERT + GAT + Transformer Enc/Dec</strong>(약 186만 파라미터) 구조를 이해했습니다.</li>
-    <li>베이스라인을 크게 앞선 성능(MRR 0.8953, 5-mini는 0.9213)을 확인했습니다.</li>
+    <li><strong>PubMedBERT + GAT + Transformer Enc/Dec</strong>(약 320만 파라미터) 구조를 이해했습니다.</li>
+    <li>베이스라인을 크게 앞선 성능(MRR 0.884, Hits@1 84.7%)을 확인했습니다.</li>
   </ul>
   <p>모델이 패턴을 안다면, 거꾸로 <strong>“아직 아무도 말하지 않은 관계”</strong>도 점칠 수 있지 않을까요? 7장에서 가설을 만듭니다.</p>
 

@@ -23,26 +23,26 @@
   </div>
 
   <div class="callout colab">
-    <span class="t">배포 정책 — 모든 앱을 Vercel로 통일</span>
-    이 프로젝트의 웹앱은 <strong>전부 정적</strong>이라 <strong>Vercel</strong> 하나로 통일해 배포합니다(서버·DB 불필요).
+    <span class="t">배포 정책 — 정적은 Vercel, 검증(DB)은 Streamlit</span>
+    정적 앱(그림책·시각화)은 <strong>Vercel로 통일</strong>하고, 검토 앱(HITL)은 <strong>DB 저장</strong>이 필요해 <strong>Streamlit Cloud</strong>로 배포합니다.
     <ul style="margin:8px 0 0">
-      <li>📖 그림책 — <code class="inl">mab-causal-guidebook</code> · <a href="https://sdkparkforbi.github.io/mab-causal-guidebook/">현재 Pages 배포됨</a></li>
-      <li>🕸️ 시각화 — <code class="inl">mab-causal-network</code> · <a href="https://sdkparkforbi.github.io/mab-causal-network/">현재 Pages 배포됨</a></li>
-      <li>✅ 검증 앱 — <code class="inl">mab-causal-review</code> (정적, 신규) → Vercel</li>
+      <li>📖 그림책 — <code class="inl">mab-causal-guidebook</code> → Vercel <em>(현재 Pages 배포됨)</em></li>
+      <li>🕸️ 시각화 — <code class="inl">mab-causal-network</code> → Vercel <em>(현재 Pages 배포됨)</em></li>
+      <li>✅ 검증 앱(HITL) — <code class="inl">mab-review-app</code> (Streamlit + DB) → Streamlit Cloud</li>
     </ul>
-    <span style="font-size:13px;color:var(--ink-soft)">※ <code class="inl">review-validation</code>(아마존 리뷰)와 <code class="inl">mab-review-app</code>(Streamlit 대안)은 별개 앱.</span>
+    <span style="font-size:13px;color:var(--ink-soft)">※ 정적 lite 검토는 <code class="inl">mab-causal-review</code>(localStorage)도 가능. <code class="inl">review-validation</code>(아마존 리뷰)은 무관.</span>
   </div>
 
   <h2>A. 무엇을 어디에 올리나 — 한눈에</h2>
-  <p>핵심 원칙: 웹앱이 <strong>모두 정적</strong>이므로 <strong>Vercel 하나로 통일</strong>합니다(GitHub Pages도 동일하게 가능). 파이썬 서버가 필요한 경우에만 Streamlit Cloud를 씁니다.</p>
+  <p>핵심 원칙: <strong>정적 앱은 Vercel로 통일</strong>(Pages도 가능), <strong>DB가 필요한 검토 앱은 Streamlit Cloud</strong>. 정본 초록도 HITL을 Streamlit으로 규정합니다.</p>
   <div class="tablewrap">
     <table>
       <thead><tr><th>산출물</th><th>정체</th><th>저장소</th><th>배포처</th></tr></thead>
       <tbody>
         <tr><td>이 그림책</td><td>정적 HTML</td><td><code class="inl">mab-causal-guidebook</code></td><td><strong>Vercel</strong> <em>(또는 Pages)</em></td></tr>
         <tr><td>시각화 앱 (4장)</td><td>정적 HTML + CSV</td><td><code class="inl">mab-causal-network</code></td><td><strong>Vercel</strong> <em>(또는 Pages)</em></td></tr>
-        <tr><td>검증 앱 (5장)</td><td>정적 HTML + JSON</td><td><code class="inl">mab-causal-review</code></td><td><strong>Vercel</strong> <em>(또는 Pages)</em></td></tr>
-        <tr><td>검증 앱 — 서버형(선택)</td><td>Streamlit(파이썬)</td><td><code class="inl">mab-review-app</code></td><td>Streamlit Cloud</td></tr>
+        <tr><td>검증 앱 (5장, HITL)</td><td>Streamlit + DB</td><td><code class="inl">mab-review-app</code></td><td><strong>Streamlit Cloud</strong></td></tr>
+        <tr><td>검증 앱 — 정적 lite(선택)</td><td>정적 HTML + JSON</td><td><code class="inl">mab-causal-review</code></td><td>Vercel <em>(또는 Pages)</em></td></tr>
         <tr><td>파이프라인 (1~3·6장)</td><td>Colab 노트북</td><td>노트북 repo</td><td>배포 안 함 · Colab이 직접 로드</td></tr>
       </tbody>
     </table>
@@ -156,8 +156,8 @@ api_key = st.secrets[<span class="s">"OPENAI_API_KEY"</span>]   <span class="c">
   <h2>E. 어떤 걸 고를까 — 한 장 요약</h2>
   <div class="code">
     <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">cheatsheet</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>정적(HTML)   → Vercel(통일) 또는 Pages   ← 그림책 · 시각화 · 검증 앱
-파이썬 서버   → Streamlit Cloud (선택)    ← 검증 앱 서버형(mab-review-app)
+<pre>정적(HTML)   → Vercel(통일) 또는 Pages   ← 그림책 · 시각화 · (검증 lite)
+파이썬 + DB   → Streamlit Cloud           ← 검증 앱 HITL (mab-review-app)
 노트북       → GitHub 보관, Colab이 로드  ← 파이프라인</pre>
   </div>
 

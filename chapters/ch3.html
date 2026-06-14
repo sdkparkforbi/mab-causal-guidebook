@@ -29,10 +29,10 @@
   </div>
 
   <div class="callout note">
-    <span class="t">실제 연구 규모 — 추출 모델이 엣지 수를 좌우한다</span>
-    실제 논문은 7,548편에서 원시 관계 <strong>17,138개 → 고유 엣지 16,019개</strong>를 만들었습니다(GPT-4o-mini).
-    더 강한 <strong>GPT-5-mini</strong>는 한 논문에서 2.8배 많은 관계를 뽑아
-    원시 <strong>39,792개 → 고유 엣지 32,939개</strong>로 늘어납니다. 허브도 aggregation·immunogenicity처럼 더 구체적인 안정성 지표로 바뀝니다.
+    <span class="t">실제 연구 규모 (정본)</span>
+    정본 시스템은 5,576편에서 22-relation 스키마로 SVO 트리플을 추출해
+    <strong>32,939개 directed edge · 8,670개 노드</strong>(출처 논문 provenance 보존)를 만듭니다.
+    허브 노드는 <strong>aggregation · binding activity · immunogenicity</strong> — SC 전환 실패 모드와 일치합니다.
   </div>
 
   <h2>1. 큰 그림 — 세 번에 나눠 짓는다</h2>

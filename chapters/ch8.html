@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>8장. 논문 쓰기 — Bioinformatics 포맷</title>
+<title>8장. 논문 쓰기 — Decision Support Tool</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/style.css" />
@@ -18,109 +18,101 @@
 <div class="page"><div class="wrap">
   <div class="chapter-head">
     <span class="badge">CHAPTER 8</span>
-    <h1>논문 쓰기 — Bioinformatics 포맷</h1>
-    <p class="lead">1~7장의 결과를 한 편의 논문으로 엮습니다. 이미 완성된 실제 논문이 <strong>모범 답안</strong>입니다.</p>
+    <h1>논문 쓰기 — Decision Support Tool</h1>
+    <p class="lead">1~7장의 결과를 한 편의 논문으로 엮습니다. 정본은 <strong>IV→SC 전환 의사결정 지원 도구</strong> 논문입니다.</p>
   </div>
 
   <div class="callout colab">
-    <span class="t">이 장의 결과물</span>
-    <strong>논문 초안 1편</strong> — Abstract부터 References까지. 실제 이 프로젝트는
-    <em>Briefings in Bioinformatics</em>(2026 제출)와 <strong>ISMB 2026 BOKR 트랙 채택</strong>으로 이어졌습니다.
+    <span class="t">이 장의 결과물 · 정본 논문</span>
+    <em>“A Knowledge Graph Decision Support Tool for IV to SC Conversion of Therapeutic Monoclonal Antibodies”</em>
+    — 우리가 만든 그래프·모델·검토 인터페이스를 하나의 <strong>의사결정 지원 시스템</strong>으로 묶은 논문.
   </div>
 
-  <h2>1. 실제 논문이 모범 답안</h2>
-  <p>이 그림책의 내용은 이미 한 편의 튜토리얼 논문으로 정리돼 있습니다. 표지 정보를 그대로 익혀 두세요.</p>
+  <h2>1. 정본 논문 — 세 부품을 하나의 ‘도구’로</h2>
+  <p>이 시스템의 메시지는 “예측 모델”이 아니라 <strong>“제형 과학자가 IV→SC 스크리닝 우선순위를 정하도록 돕는 도구”</strong>입니다. 세 부품이 합쳐집니다.</p>
+  <div class="card"><div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>Literature-to-KG</h4><p>62,281편 → 정밀도 우선 필터 5,576편 → 22-relation SVO 추출 → <strong>32,939 엣지 / 8,670 노드</strong>(provenance 보존).</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Predictor — mAb-GATED</h4><p>3.2M 파라미터 그래프-어텐션 트랜스포머, PubMedBERT 초기화, 하위범주 제한 분류(32 타깃 → 15 공식 지표: 물리4·화학5·생물6).</p></div></div>
+    <div class="step"><div class="n alt">3</div><div><h4>HITL — 전문가 검토</h4><p>Streamlit 인터페이스로 AI 생성 기전 해석을 전문가가 검토(빈도 가중 300 샘플) → 결과를 <strong>DB에 저장</strong>.</p></div></div>
+  </div></div>
   <div class="card">
-    <p style="margin:4px 0"><strong>제목</strong> — <em>“A Generative AI-Extracted Mechanistic Knowledge Graph for mAb Stability: Construction, Analysis, and Prediction with mAb-GATED”</em></p>
+    <p style="margin:4px 0"><strong>제목</strong> — <em>A Knowledge Graph Decision Support Tool for IV to SC Conversion of Therapeutic Monoclonal Antibodies</em></p>
     <p style="margin:4px 0"><strong>저자</strong> — Gyu Seong Lee†, Hyeong Gyu Choi†, Ji Hye Park, Hyo Young Kim*, Dae Keun Park* (CHA Univ. / Tech Univ. of Korea)</p>
-    <p style="margin:4px 0"><strong>투고</strong> — Briefings in Bioinformatics (2026) · <strong>ISMB 2026</strong> BOKR 트랙 채택</p>
-    <p style="margin:4px 0"><strong>POC 분자</strong> — belimumab(Benlysta) — IV·SC 둘 다 FDA 승인되어 예측 검증에 이상적</p>
+    <p style="margin:4px 0"><strong>형식</strong> — IEEE 컨퍼런스(Abstract · <em>Clinical Relevance</em> · I~IV · References) · POC: belimumab</p>
   </div>
-  <div class="callout note"><span class="t">두 문서를 하나로</span>
-    본 프로젝트는 <code class="inl">mAb_GATED.docx</code>(본문)와
-    <code class="inl">mAb_GATED_4o-mini_5-mini.docx</code>(버전 비교)를 합쳐
-    <strong><code class="inl">mAb_GATED_merged.docx</code></strong>로 통합했습니다 — 본문 + <em>Appendix A(4o-mini vs 5-mini)</em> 구조.</div>
 
-  <h2>2. 어느 결과가 어느 절을 채우나</h2>
-  <p>새로 쓸 게 거의 없습니다 — <strong>각 장의 산출물이 곧 논문의 한 절</strong>입니다.</p>
+  <h2>2. 어느 장이 어느 절을 채우나</h2>
   <div class="tablewrap"><table>
     <thead><tr><th>논문 절</th><th>가져올 곳</th><th>핵심 숫자/그림</th></tr></thead>
     <tbody>
-      <tr><td>Introduction</td><td>0장</td><td>IV→SC, 고농도 안정성 문제, belimumab POC</td></tr>
-      <tr><td>Methods · 수집</td><td>1·2장</td><td>126 쿼리·7 카테고리, 62,281편, 7,548 관련(12.1%)</td></tr>
-      <tr><td>Methods · 그래프</td><td>3장</td><td>6 카테고리·22 관계·159 표준어, 엣지 16,019</td></tr>
-      <tr><td>Methods · 모델</td><td>6장</td><td>PubMedBERT+GAT+Transformer, 약 186만 파라미터</td></tr>
-      <tr><td>Results · 성능</td><td>6장</td><td>MRR 0.8953 / H@1 0.7986 / H@3 0.9874 (베이스라인 비교)</td></tr>
-      <tr><td>Results · 허브</td><td>3장</td><td>aggregation·stability·conformational stability 허브</td></tr>
-      <tr><td>Results · 검증</td><td>5장</td><td>리뷰어 적절율 %</td></tr>
-      <tr><td>Results · 발견</td><td>7장</td><td>가설 후보 표·카드</td></tr>
-      <tr><td>Appendix A</td><td>버전 비교</td><td>5-mini: 엣지 32,939, MRR 0.9213, H@1 89.72%</td></tr>
-      <tr><td>Availability</td><td>4·5장</td><td>GitHub Pages·Vercel·Streamlit URL</td></tr>
+      <tr><td>I. Introduction</td><td>0장</td><td>IV→SC, ≥120 mg/mL·≤2 mL, belimumab</td></tr>
+      <tr><td>II. Methods ① KG</td><td>1·2·3장</td><td>62,281 → 5,576 → 32,939 엣지 / 8,670 노드</td></tr>
+      <tr><td>II. Methods ② Predictor</td><td>6장</td><td>mAb-GATED 3.2M, 32→15 지표(4·5·6)</td></tr>
+      <tr><td>II. Methods ③ HITL</td><td>5장</td><td>Streamlit, 300 샘플, DB 저장</td></tr>
+      <tr><td>III. Results (Table I)</td><td>6장</td><td>전체 Hits@1 84.7%/MRR 0.884, 물리 87.9%·화학 99.0%·생물 65.8%</td></tr>
+      <tr><td>III. Results · 허브</td><td>3장</td><td>aggregation · binding activity · immunogenicity</td></tr>
+      <tr><td>IV. Discussion</td><td>6·7장</td><td>화학 신호 최강, 생물 과소대표, 미검증·향후 서열/구조 통합</td></tr>
     </tbody>
   </table></div>
 
-  <h2>3. 채워 쓰는 템플릿</h2>
+  <h2>3. 채워 쓰는 템플릿 (IEEE)</h2>
   <div class="code">
     <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
       <span class="fn">paper_template.md</span><span class="spacer"></span><button class="copy">복사</button></div>
 <pre><span class="c"># Abstract</span>
-<span class="k">Motivation:</span> 단일클론항체의 IV→SC 전환에서 응집·점도·산화 같은 안정성 지표가
-  공유 메커니즘으로 얽혀 있으나, 대개 개별적으로만 연구되어 왔다. ...
-<span class="k">Results:</span> PubMed 초록 62,281편에서 생성형 AI로 인과관계를 추출·정규화해
-  16,019개 엣지의 기전 지식그래프를 구축했다. 허브 노드는 aggregation·stability·
-  conformational stability. PubMedBERT+GAT 기반 mAb-GATED는 하위범주 제한 분류에서
-  Test MRR 0.8953, H@1 0.7986을 달성해 frequency·DistMult 베이스라인을 크게 앞섰다.
-<span class="k">Availability:</span> https://sdkparkforbi.github.io/mab-causal-network/
-  · https://github.com/sdkparkforbi/mab-causal-network
-<span class="k">Contact:</span> hyoyoung@tukorea.ac.kr ; dkpark@cha.ac.kr
+SC conversion of IV mAbs is constrained by months of empirical excipient screening
+dominated by physical degradation risks at high concentrations. We present an integrated
+decision-support tool combining a literature-derived mechanistic knowledge graph,
+a graph-attention transformer (mAb-GATED), and an expert-review interface.
+On a held-out test set: MRR=0.884, Hits@1=84.7% (Physical/Chemical Hits@1 87.9%/99.0%).
 
-<span class="c"># Key Messages</span>
-- 문헌에서 생성형 AI로 mAb 안정성 기전 지식그래프를 대규모 자동 구축.
-- PubMedBERT+GAT 기반 mAb-GATED로 안정성 노드 예측 H@1 ≈ 0.80(물리 MRR 0.995).
-- 미관측 인과 후보를 검증 가능한 가설로 제시 · GPT-5-mini 재실행으로 추가 향상.
+<span class="c"># Clinical Relevance</span>
+제형 과학자가 IV→SC 스크리닝에서 수십 개 excipient/buffer/pH 변수에 대한
+물리적 열화 위험을 벤치 실험 전에 순위화하도록 돕는다 (Physical Hits@1 = 87.9%, n=612).
 
-<span class="c"># Methods 소제목 → 각 장 매핑</span>
-- Data Collection (PubMed E-utilities, 126 queries / 7 categories)  ← 1장
-- Relevance Filtering (GPT-4o-mini)                                 ← 2장
-- Extraction + Normalization + Aggregation (159 canonical terms)   ← 3장
-- mAb-GATED (PubMedBERT init → GAT → Transformer enc/dec)          ← 6장
-- Human Validation (적절율) / Evaluation (MRR, Hits@k)             ← 5·6장</pre>
+<span class="c"># II. Methods (세 부품)</span>
+(1) Literature-to-KG : 62,281 → 5,576 → 32,939 edges / 8,670 nodes (22-relation, provenance)
+(2) Predictor        : mAb-GATED 3.2M params, PubMedBERT init, enc-dec,
+                       sub-category-constrained CE, 32 targets → 15 indicators (4/5/6)
+(3) HITL             : Streamlit expert review, 300 frequency-weighted samples → DB
+
+<span class="c"># III. Results (Table I) — sub-category</span>
+Physical   n=612  Hits@1 87.9%  MRR 0.896
+Chemical   n=292  Hits@1 99.0%  MRR 0.993
+Biological n=327  Hits@1 65.8%  MRR 0.763
+Overall    n=1231 Hits@1 84.7%  MRR 0.884   (baselines: freq 0.557, DistMult 0.588)</pre>
   </div>
 
-  <h2>4. 그림과 표</h2>
+  <h2>4. 표·그림</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><div><h4>Figure 1 · mAb-GATED 구조</h4><p>임베딩→GAT→Encoder→Decoder→출력(6장 도식).</p></div></div>
-    <div class="step"><div class="n">2</div><div><h4>Figure 2 · 성능 비교</h4><p>4개 모델 MRR/H@1/H@3 + 하위범주 내역(6장 표).</p></div></div>
-    <div class="step"><div class="n">3</div><div><h4>Figure 3 · 지식그래프</h4><p>4장 D3.js 시각화 스크린샷(빈도 상위 서브그래프).</p></div></div>
-    <div class="step"><div class="n">4</div><div><h4>Table · 신규 가설</h4><p>7장 상위 가설 후보 + 점수 + 근거 이웃.</p></div></div>
+    <div class="step"><div class="n">1</div><div><h4>Table I · 하위범주 성능</h4><p>6장 결과표(물리/화학/생물 + 전체).</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Figure · 시스템 도식</h4><p>KG → Predictor → HITL 3부품(0장 지도).</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>Figure · 지식그래프</h4><p>4장 시각화 스크린샷(허브 노드 강조).</p></div></div>
   </div>
 
-  <h2>5. 참고문헌 — 주제에 맞게</h2>
-  <ul>
-    <li>언어모델: <strong>PubMedBERT</strong> / 그래프 어텐션: <strong>GAT</strong>(Veličković et al.)</li>
-    <li>문헌 인과 추출: INDRA 계열(<strong>Gyori et al.</strong>) — <em>PSB 2026 “Literature-Driven … Causal Statements”</em>가 방법론적 짝</li>
-    <li>도메인: Le Basle(2020), Desai(2023), Jiskoot(2022), belimumab(Stohl 2017 등) — 실제 논문 References 재사용</li>
+  <h2>5. 참고문헌 (정본 5건)</h2>
+  <ul style="font-size:14px">
+    <li>[1] Mucke et al., <em>Patient Prefer. Adherence</em>, 2019 — belimumab IV→SC</li>
+    <li>[2] Jiskoot et al., <em>J. Pharm. Sci.</em>, 2022 — high-concentration SC 난제</li>
+    <li>[3] Le Basle et al., <em>J. Pharm. Sci.</em>, 2020 — mAb 물리화학 안정성 리뷰</li>
+    <li>[4] Veličković et al., ICLR 2018 — Graph Attention Networks</li>
+    <li>[5] Gu et al., <em>ACM Trans. Comput. Healthcare</em>, 2021 — PubMedBERT</li>
   </ul>
 
-  <h2>6. Word/PDF로 내보내기</h2>
-  <div class="code">
-    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="fn">PowerShell · pandoc</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>pandoc paper_template.md -o paper_draft.docx   <span class="c"># 마크다운 → Word</span>
-<span class="c"># 또는 완성된 mAb_GATED_merged.docx를 저널 양식에 맞춰 정리</span></pre>
-  </div>
-  <div class="callout note"><span class="t">양식 기준</span>
-    Abstract(Motivation/Results/Availability/Contact) · Key Messages · IMRaD ·
-    Funding/Data availability/References — 제공 PDF 및 <code class="inl">mAb_GATED.docx</code>와 동일한 순서.</div>
+  <h2>6. 함께 보는 문서</h2>
+  <div class="callout note"><span class="t">버전 계보</span>
+    이 IEEE 초록이 <strong>최신 정본</strong>입니다. 더 긴 튜토리얼 본문은
+    <code class="inl">mAb_GATED_merged.docx</code>(Bioinformatics 형식 + 버전 비교 Appendix A)에,
+    PK 예측 자매 연구는 <code class="inl">Ensemble ML … PK Prediction.pdf</code>에 있습니다.</div>
 
   <h2>오늘의 마무리 — 그리고 그림책의 끝</h2>
   <ul>
-    <li>각 장 산출물을 논문 절에 <strong>1:1로 매핑</strong>해 초안을 채웠습니다.</li>
-    <li>실제 논문(제목·저자·수치·ISMB 2026 채택)을 모범 답안으로 익혔습니다.</li>
-    <li>두 문서를 합친 <code class="inl">mAb_GATED_merged.docx</code>로 본문+버전 비교를 통합했습니다.</li>
+    <li>세 부품(KG · Predictor · HITL)을 하나의 <strong>의사결정 지원 도구</strong>로 묶어 서술했습니다.</li>
+    <li>정본 수치(Hits@1 84.7% / MRR 0.884, 물리 87.9% · 화학 99.0%)로 초안을 채웠습니다.</li>
+    <li>IEEE 형식(Abstract · Clinical Relevance · IMRaD)으로 정리했습니다.</li>
   </ul>
   <p>
-    축하합니다 🎉 — PubMed 초록에서 시작해 <strong>지식그래프 · 웹앱 2개 · 예측 모델 · 새 가설 · 논문</strong>까지
+    축하합니다 🎉 — PubMed 초록에서 시작해 <strong>지식그래프 · 웹앱 · 예측 모델 · 새 가설 · 논문</strong>까지
     전 과정을 직접 만들어 냈습니다. 막히면 <a href="appendix.html">부록</a>을 참고하세요.
   </p>
 
