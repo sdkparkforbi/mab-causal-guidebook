@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>5장. 검증 앱 (HITL · Streamlit + DB)</title>
+<title>5장. 검증 앱 (Vercel + DB + 대시보드)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../assets/style.css" />
@@ -12,156 +12,141 @@
 <div id="progress"></div>
 <div class="topbar"><div class="wrap">
   <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
-  <span class="crumb">5장 · 검증 앱(HITL)</span>
+  <span class="crumb">5장 · 검증 앱(Vercel+DB)</span>
 </div></div>
 
 <div class="page"><div class="wrap">
   <div class="chapter-head">
     <span class="badge">CHAPTER 5</span>
-    <h1>검증 앱 (HITL · Streamlit + DB)</h1>
-    <p class="lead">AI가 만든 기전 해석을 전문가가 검토하고, <strong>결과를 DB에 저장</strong>합니다 — 정본 논문의 세 번째 부품(HITL)입니다.</p>
+    <h1>검증 앱 (Vercel + DB + 대시보드)</h1>
+    <p class="lead">AI가 만든 기전 해석을 전문가가 검토하고, <strong>결과를 DB에 저장</strong>하고, <strong>대시보드</strong>로 한눈에 봅니다.</p>
   </div>
 
   <div class="callout colab">
-    <span class="t">이 장의 결과물</span>
-    <code class="inl">https://&lt;앱이름&gt;.streamlit.app</code> — 빈도 가중 <strong>300개 샘플</strong>의 GPT 해석을
-    리뷰어가 <strong>적절/부적절 + 의견</strong>으로 판정하고, 판정 결과가 <strong>중앙 DB</strong>에 쌓입니다.
+    <span class="t">이 장의 결과물 · 실제 배포됨</span>
+    검증 → <a href="https://mab-causal-review.vercel.app">mab-causal-review.vercel.app</a> ·
+    대시보드 → <a href="https://mab-causal-review.vercel.app/dashboard.html">/dashboard.html</a>.
+    판정이 <strong>MySQL</strong>에 저장되고, 대시보드가 적절율·표를 보여줍니다.
   </div>
 
   <div class="callout note">
-    <span class="t">왜 Streamlit + DB인가</span>
-    여러 리뷰어의 판정을 <strong>한 곳(DB)에 모아야</strong> 적절율을 신뢰성 근거로 쓸 수 있습니다.
-    정적(localStorage)은 한 사람 브라우저에만 남아 이 목적에 맞지 않습니다. 그래서 이 앱은 파이썬 서버형(Streamlit)으로,
-    <strong>Streamlit Cloud</strong>에 배포합니다. (정적 앱은 Vercel, 이 앱만 Streamlit Cloud)
-  </div>
-
-  <h2>0. 작업 흐름 — 클론 → 내 repo → Streamlit Cloud</h2>
-  <div class="code">
-    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="fn">PowerShell</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>git clone https://github.com/STARG-LEE/mab-review-app.git
-cd mab-review-app
-Remove-Item -Recurse -Force .git
-git init ; git add . ; git commit -m <span class="s">"HITL 검증 앱"</span>
-gh repo create mab-review-app --public --source=. --push</pre>
-  </div>
-  <div class="callout warn">
-    <span class="t">⚠ 업로드 전 비밀값 청소 (DB 접속정보!)</span>
-    이 앱은 DB에 연결합니다. 코드에 접속정보가 평문으로 있으면 공개 시 노출됩니다.
-    <div class="code" style="margin-top:10px">
-      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">scan</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>git grep -nE <span class="s">"106\.247|user2|password|DB_URL\s*="</span>   <span class="c"># → st.secrets로 옮기고 실제값은 Cloud Secrets에</span></pre>
-    </div>
-    <span style="font-size:13px">원본 <code class="inl">mab-review-app</code>은 이미 <code class="inl">st.secrets["DB_URL"]</code>로 처리돼 있어 코드엔 키가 없습니다 ✓</span>
+    <span class="t">구조 한 줄 — Vercel로 통일하면서 DB까지</span>
+    정적 화면만으로는 DB 저장이 안 됩니다. 그래서 <strong>정적 프론트 + Vercel 서버리스 함수(<code class="inl">/api</code>)</strong>를 함께 둬,
+    프론트가 <code class="inl">/api/review</code>로 판정을 보내면 함수가 <strong>MySQL에 INSERT</strong>합니다. 모든 앱을 Vercel 하나로 통일하면서 중앙 DB도 갖춥니다.
   </div>
 
   <h2>1. 왜 검증인가 — 휴먼 인 더 루프</h2>
-  <p>GPT가 뽑은 해석엔 오류가 섞일 수 있습니다. 모델을 믿기 전에 <strong>표본을 전문가가 확인</strong>해 품질을 수치로 증명합니다. 이 “적절율(%)”이 정본 논문의 <strong>정성 검증</strong> 근거가 됩니다.</p>
+  <p>GPT 해석엔 오류가 섞일 수 있습니다. 전문가가 표본을 확인해 품질을 수치로 증명하고, 결과를 <strong>한 DB에 모아</strong> 적절율을 신뢰성 근거로 씁니다.</p>
   <section class="hero-art" aria-label="휴먼 인 더 루프">
-    <svg viewBox="0 0 820 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GPT 해석을 전문가가 적절/부적절로 검수해 DB에 저장">
-      <g transform="translate(20,35)">
-        <rect x="0" y="10" width="180" height="80" rx="12" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
-        <text x="90" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#2f7d8c">GPT 해석 (300 샘플)</text>
-        <text x="90" y="62" text-anchor="middle" font-size="11" fill="#51626d">“A가 B를 촉진한다 …”</text>
+    <svg viewBox="0 0 820 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GPT 해석을 전문가가 검수해 DB에 저장하고 대시보드로 본다">
+      <g transform="translate(10,35)">
+        <rect x="0" y="10" width="170" height="80" rx="12" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
+        <text x="85" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#2f7d8c">GPT 해석</text>
+        <text x="85" y="62" text-anchor="middle" font-size="11" fill="#51626d">“A가 B를 촉진”</text>
       </g>
-      <g transform="translate(210,75)"><line x1="0" y1="0" x2="40" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M40,-7 L56,0 L40,7 Z" fill="#9aa7b0"/></g>
-      <g transform="translate(280,30)">
-        <text x="90" y="14" text-anchor="middle" font-size="20">🧑‍🔬</text>
-        <rect x="0" y="24" width="180" height="70" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
-        <text x="90" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">전문가 판정</text>
-        <text x="90" y="74" text-anchor="middle" font-size="11" fill="#51626d">적절 / 부적절 + 의견</text>
+      <g transform="translate(190,75)"><line x1="0" y1="0" x2="34" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M34,-7 L50,0 L34,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(252,30)">
+        <text x="85" y="14" text-anchor="middle" font-size="20">🧑‍🔬</text>
+        <rect x="0" y="24" width="170" height="70" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
+        <text x="85" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">전문가 판정</text>
+        <text x="85" y="74" text-anchor="middle" font-size="11" fill="#51626d">적절 / 부적절</text>
       </g>
-      <g transform="translate(480,75)"><line x1="0" y1="0" x2="40" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M40,-7 L56,0 L40,7 Z" fill="#9aa7b0"/></g>
-      <g transform="translate(550,35)">
-        <rect x="0" y="10" width="110" height="80" rx="12" fill="#eef4f5" stroke="#2f7d8c" stroke-width="2"/>
-        <text x="55" y="44" text-anchor="middle" font-size="22">🗄️</text>
-        <text x="55" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#2f7d8c">DB 저장</text>
+      <g transform="translate(432,75)"><line x1="0" y1="0" x2="34" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M34,-7 L50,0 L34,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(496,35)">
+        <rect x="0" y="10" width="120" height="80" rx="12" fill="#eef4f5" stroke="#2f7d8c" stroke-width="2"/>
+        <text x="60" y="42" text-anchor="middle" font-size="22">🗄️</text>
+        <text x="60" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#2f7d8c">MySQL 저장</text>
       </g>
-      <g transform="translate(680,35)">
-        <rect x="0" y="10" width="120" height="80" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
-        <text x="60" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">적절율 %</text>
-        <text x="60" y="68" text-anchor="middle" font-size="10" fill="#51626d">신뢰성 근거</text>
+      <g transform="translate(636,75)"><line x1="0" y1="0" x2="30" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M30,-7 L46,0 L30,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(696,35)">
+        <rect x="0" y="10" width="114" height="80" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+        <text x="57" y="42" text-anchor="middle" font-size="20">📊</text>
+        <text x="57" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#c9742a">대시보드</text>
       </g>
     </svg>
   </section>
 
-  <h2>2. 앱 구조 — Streamlit + 두 DB 테이블</h2>
+  <h2>2. 앱 구조 — 정적 + 서버리스 함수</h2>
   <div class="code">
     <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="fn">mab-review-app/</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>mab-review-app/
-├── app.py                      <span class="c"># Streamlit UI (리뷰어용)</span>
-├── generate_review_samples.py  <span class="c"># 300 샘플 사전 생성 (관리자, OpenAI)</span>
-├── requirements.txt
-└── .streamlit/secrets.toml     <span class="c"># ⚠ .gitignore — 실제값은 Cloud Secrets</span>
-
-<span class="c"># DB 테이블</span>
-mab_review_samples   <span class="c"># 300 샘플 + GPT 해석</span>
-mab_review_results   <span class="c"># 리뷰어 판정 저장 (sample_id, reviewer, verdict, feedback)</span></pre>
+      <span class="fn">mab-causal-review/</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>mab-causal-review/
+├── index.html      <span class="c"># 검증 UI → /api/review 로 판정 전송</span>
+├── dashboard.html  <span class="c"># 📊 대시보드 → /api/results 조회</span>
+├── samples.json    <span class="c"># 검증 샘플 (인과관계 + GPT 해석)</span>
+├── api/
+│   ├── review.js   <span class="c"># POST → MySQL INSERT (mab_causal_review_results)</span>
+│   └── results.js  <span class="c"># GET  → 저장된 결과 반환</span>
+└── package.json    <span class="c"># "type":"module", mysql2</span></pre>
   </div>
 
-  <h2>3. 핵심 코드 — DB에 판정 저장</h2>
-  <p>비밀값은 <code class="inl">st.secrets</code>로 읽고, 판정은 <code class="inl">mab_review_results</code>에 <strong>INSERT/UPDATE</strong> 합니다.</p>
+  <h2>3. 핵심 코드 — DB에 저장하는 서버리스 함수</h2>
   <div class="code">
     <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="fn">app.py (발췌)</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre><span class="k">import</span> streamlit <span class="k">as</span> st
-<span class="k">from</span> sqlalchemy <span class="k">import</span> create_engine, text
+      <span class="fn">api/review.js (발췌)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">import</span> mysql <span class="k">from</span> <span class="s">'mysql2/promise'</span>;
 
-DB_URL = st.secrets[<span class="s">"DB_URL"</span>]              <span class="c"># 코드에 키 없음 (Cloud Secrets)</span>
-engine = create_engine(DB_URL)
-
-<span class="c"># 샘플 로드</span>
-samples = pd.read_sql(<span class="s">"SELECT sample_id, target_node, target_subcat, "</span>
-                      <span class="s">"record_json, gpt_interpretation FROM mab_review_samples"</span>, engine)
-
-<span class="c"># 한 건 보여주고 판정 받기</span>
-st.info(row.gpt_interpretation)
-verdict  = st.radio(<span class="s">"이 해석이 타당한가요?"</span>, [<span class="s">"적절"</span>, <span class="s">"부적절"</span>], horizontal=<span class="k">True</span>)
-feedback = st.text_area(<span class="s">"의견 (선택)"</span>)
-
-<span class="k">if</span> st.button(<span class="s">"저장"</span>) <span class="k">and</span> reviewer:
-    <span class="k">with</span> engine.begin() <span class="k">as</span> c:
-        c.execute(text(<span class="s">"INSERT INTO mab_review_results "</span>
-            <span class="s">"(sample_id, reviewer, verdict, feedback) "</span>
-            <span class="s">"VALUES (:s, :r, :v, :f)"</span>),
-            {<span class="s">"s"</span>:row.sample_id, <span class="s">"r"</span>:reviewer, <span class="s">"v"</span>:verdict, <span class="s">"f"</span>:feedback})
-    st.success(<span class="s">"DB에 저장되었습니다 ✓"</span>)</pre>
+<span class="k">export default async function</span> handler(req, res) {
+  <span class="k">if</span> (req.method !== <span class="s">'POST'</span>) <span class="k">return</span> res.status(<span class="k">405</span>).json({error:<span class="s">'POST only'</span>});
+  <span class="k">const</span> b = req.body || {};
+  <span class="c">// 접속정보는 코드에 없음 → Vercel 환경변수</span>
+  <span class="k">const</span> conn = <span class="k">await</span> mysql.createConnection({
+    host:process.env.DB_HOST, port:+process.env.DB_PORT,
+    user:process.env.DB_USER, password:process.env.DB_PASSWORD,
+    database:process.env.DB_NAME, charset:<span class="s">'utf8mb4'</span> });
+  <span class="k">await</span> conn.execute(<span class="s">`INSERT INTO mab_causal_review_results
+      (sample_id,reviewer,verdict,feedback,cause,effect,relationship)
+      VALUES (?,?,?,?,?,?,?)`</span>,
+    [b.sample_id,b.reviewer,b.verdict,b.feedback,b.cause,b.effect,b.relationship]);
+  <span class="k">await</span> conn.end();
+  res.status(<span class="k">200</span>).json({ok:<span class="k">true</span>});
+}</pre>
+  </div>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">index.html · 판정 전송</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">await</span> fetch(<span class="s">"/api/review"</span>, { method:<span class="s">"POST"</span>,
+  headers:{<span class="s">"Content-Type"</span>:<span class="s">"application/json"</span>},
+  body: JSON.stringify({ sample_id:s.id, reviewer:name,
+    verdict, feedback, cause:s.cause, effect:s.effect, relationship:s.relationship }) });</pre>
   </div>
 
-  <h2>4. 300 샘플 사전 생성</h2>
-  <p>관리자는 <code class="inl">generate_review_samples.py</code>로 인과그래프에서 빈도 가중 300개를 뽑아 GPT 해석을 붙여 <code class="inl">mab_review_samples</code>에 미리 채웁니다(OpenAI 키 필요, 한 번만).</p>
+  <h2>4. DB 환경변수 — 코드에 키를 두지 않는다</h2>
+  <p>접속정보는 <strong>Vercel ▸ Settings ▸ Environment Variables</strong>에 넣습니다(암호화 저장). 코드는 <code class="inl">process.env</code>로만 읽습니다.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>변수</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inl">DB_HOST</code></td><td>106.247.236.2</td></tr>
+      <tr><td><code class="inl">DB_PORT</code></td><td>3306</td></tr>
+      <tr><td><code class="inl">DB_USER</code> / <code class="inl">DB_PASSWORD</code></td><td>user / ••••</td></tr>
+      <tr><td><code class="inl">DB_NAME</code></td><td>abswitch</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><span class="t">DB는 외부 접속 허용 필요</span>
+    Vercel 함수가 연결하려면 MySQL이 외부 IP 접속을 허용해야 합니다. 막혀 있으면 무료 서버리스 DB(Vercel Postgres·Supabase)로 바꾸면 됩니다.</div>
 
-  <h2>5. Streamlit Cloud로 배포</h2>
+  <h2>5. 대시보드 — DB 내용 보기</h2>
+  <p><a href="https://mab-causal-review.vercel.app/dashboard.html"><code class="inl">/dashboard.html</code></a>이
+     <code class="inl">/api/results</code>를 호출해 <strong>총 리뷰 · 적절율 · 판정 분포 · 전체 표</strong>를 보여주고 CSV로 내보냅니다.</p>
+
+  <h2>6. 배포 (Vercel)</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><div><h4>New app</h4><p><a href="https://share.streamlit.io">share.streamlit.io</a> → GitHub 로그인 → New app.</p></div></div>
-    <div class="step"><div class="n">2</div><div><h4>지정</h4><p>내 <code class="inl">mab-review-app</code> / branch / <code class="inl">app.py</code>.</p></div></div>
-    <div class="step"><div class="n">3</div><div><h4>Secrets</h4><p><strong>App settings ▸ Secrets</strong>에 <code class="inl">DB_URL = "mysql+pymysql://..."</code> 입력.</p></div></div>
-    <div class="step"><div class="n alt">4</div><div><h4>Deploy</h4><p><code class="inl">.streamlit.app</code> URL 발급, push마다 자동 재배포.</p></div></div>
+    <div class="step"><div class="n">1</div><div><h4>Import</h4><p>vercel.com → Add New ▸ Project ▸ Import → <code class="inl">mab-causal-review</code>.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>환경변수</h4><p>Settings ▸ Environment Variables에 DB_* 입력.</p></div></div>
+    <div class="step"><div class="n alt">3</div><div><h4>Deploy</h4><p>검증 <code class="inl">/</code> + 대시보드 <code class="inl">/dashboard.html</code> 발급. push마다 자동 재배포.</p></div></div>
   </div>
 
-  <h2>6. 적절율 집계</h2>
-  <div class="code">
-    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-      <span class="fn">집계 (SQL)</span><span class="spacer"></span><button class="copy">복사</button></div>
-<pre>SELECT verdict, COUNT(*) FROM mab_review_results GROUP BY verdict;
-<span class="c">-- 적절율 = 적절 / 전체 → 예) 적절율 86%</span></pre>
-  </div>
-  <div class="callout tip"><span class="t">이 숫자가 논문이 된다</span>
-    “300 expert-curated explanations이 검토 대기/완료”가 정본 논문의 정성 검증 절을 채웁니다.
-    부적절 의견은 3장 프롬프트 개선으로 되먹입니다.</div>
-
-  <h2>다른 길 — DB가 필요 없을 때(정적 lite)</h2>
-  <div class="callout note"><span class="t">오프라인 lite 버전</span>
-    DB 없이 한 사람이 빠르게 검토만 하려면, 정적 버전
-    <a href="https://github.com/sdkparkforbi/mab-causal-review">mab-causal-review</a>(localStorage·Vercel)도 있습니다.
-    단, 결과가 브라우저에만 남으므로 <strong>여러 리뷰어 집계·DB 저장이 필요하면 이 장의 Streamlit 버전</strong>을 쓰세요.</div>
+  <h2>다른 길 — 초록이 말한 Streamlit 버전</h2>
+  <div class="callout note"><span class="t">동등한 HITL 구현</span>
+    정본 초록은 검토 인터페이스를 <strong>Streamlit</strong>으로 기술합니다(<a href="https://github.com/STARG-LEE/mab-review-app">mab-review-app</a>, DB 동일).
+    우리는 같은 기능(전문가 검토 → DB 저장)을 <strong>Vercel 서버리스</strong>로 구현해 모든 앱을 Vercel로 통일했습니다 — 둘은 동등한 HITL입니다.
+    (아마존 리뷰용 <code class="inl">review-validation</code>과는 무관)</div>
 
   <h2>오늘의 마무리</h2>
   <ul>
-    <li>전문가 검토(HITL)를 <strong>Streamlit + DB</strong>로 구현해 판정을 중앙 저장했습니다.</li>
-    <li>키는 <code class="inl">st.secrets</code>로 안전하게, 결과는 <code class="inl">mab_review_results</code>에 INSERT.</li>
-    <li><strong>적절율</strong>로 모델 신뢰성을 수치화했습니다.</li>
+    <li>전문가 검토(HITL)를 <strong>Vercel 서버리스 + MySQL</strong>로 구현해 판정을 중앙 저장했습니다.</li>
+    <li>키는 환경변수로, 결과는 <code class="inl">mab_causal_review_results</code>에 INSERT.</li>
+    <li><strong>대시보드</strong>로 적절율을 한눈에 — 모델 신뢰성의 정량 근거.</li>
   </ul>
   <p>데이터·시각화·검증이 갖춰졌습니다. 6장에서 이 그래프로 <strong>예측 모델 mAb-GATED</strong>를 학습시킵니다.</p>
 
