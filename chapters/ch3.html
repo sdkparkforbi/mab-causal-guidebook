@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>3장. 인과관계 추출 · 정규화 · 엣지 집계</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">3장 · 인과관계 추출</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 3</span>
+    <h1>인과관계 추출 · 정규화 · 엣지 집계</h1>
+    <p class="lead">초록 한 편 한 편에서 <code class="inl">원인 → 결과</code>를 캐내, 우리 지식그래프의 ‘뼈대’를 만듭니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <code class="inl">step3_edges.csv</code> — 고유 엣지 약 <strong>3.3만 개</strong>
+    (원인·결과·관계유형·빈도·논문수·근거). 4장 시각화와 6장 모델의 입력입니다.
+  </div>
+
+  <div class="callout note">
+    <span class="t">실제 연구 규모 — 추출 모델이 엣지 수를 좌우한다</span>
+    실제 논문은 7,548편에서 원시 관계 <strong>17,138개 → 고유 엣지 16,019개</strong>를 만들었습니다(GPT-4o-mini).
+    더 강한 <strong>GPT-5-mini</strong>는 한 논문에서 2.8배 많은 관계를 뽑아
+    원시 <strong>39,792개 → 고유 엣지 32,939개</strong>로 늘어납니다. 허브도 aggregation·immunogenicity처럼 더 구체적인 안정성 지표로 바뀝니다.
+  </div>
+
+  <h2>1. 큰 그림 — 세 번에 나눠 짓는다</h2>
+  <p>한 번에 깔끔한 그래프가 나오지 않습니다. 세 단계로 나눕니다.</p>
+  <section class="hero-art" aria-label="추출 정규화 집계 3단">
+    <svg viewBox="0 0 820 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="2a 추출 → 2b 정규화 → 2c 집계">
+      <g transform="translate(20,40)">
+        <rect x="0" y="10" width="210" height="90" rx="12" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
+        <text x="105" y="36" text-anchor="middle" font-size="13" font-weight="700" fill="#2f7d8c">2a · 자유 추출</text>
+        <text x="105" y="60" text-anchor="middle" font-size="11" fill="#51626d">초록 → cause→effect</text>
+        <text x="105" y="80" text-anchor="middle" font-size="11" fill="#9aa7b0">원시 관계 ~39,792</text>
+      </g>
+      <g transform="translate(250,80)"><line x1="0" y1="0" x2="40" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M40,-7 L56,0 L40,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(310,40)">
+        <rect x="0" y="10" width="210" height="90" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
+        <text x="105" y="36" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">2b · 용어 정규화</text>
+        <text x="105" y="60" text-anchor="middle" font-size="11" fill="#51626d">표현 통일 (159 표준어)</text>
+        <text x="105" y="80" text-anchor="middle" font-size="11" fill="#9aa7b0">29,161 → 16,452 용어</text>
+      </g>
+      <g transform="translate(540,80)"><line x1="0" y1="0" x2="40" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M40,-7 L56,0 L40,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(600,40)">
+        <rect x="0" y="10" width="200" height="90" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+        <text x="100" y="36" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">2c · 엣지 집계</text>
+        <text x="100" y="60" text-anchor="middle" font-size="11" fill="#51626d">같은 관계를 묶어 빈도화</text>
+        <text x="100" y="80" text-anchor="middle" font-size="11" fill="#9aa7b0">고유 엣지 ~32,939</text>
+      </g>
+    </svg>
+  </section>
+
+  <h2>2. 공통 어휘 — 6개 카테고리, 22개 관계</h2>
+  <p>추출이 제멋대로면 그래프가 누더기가 됩니다. 그래서 <strong>모든 노드는 6색 카테고리 중 하나</strong>로,
+     <strong>모든 화살표는 22개 관계 중 하나</strong>로만 분류하도록 약속합니다.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>카테고리</th><th>뜻</th><th>예시</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip seq">sequence</span></td><td>아미노산 서열 특징</td><td>CDR Asn, mutation, 당화 부위</td></tr>
+        <tr><td><span class="chip str">structure</span></td><td>3차 구조 특징</td><td>소수성 패치, Fab 도메인, 이황화결합</td></tr>
+        <tr><td><span class="chip form">formulation</span></td><td>제형 조건</td><td>PS80, sucrose, pH, 농도</td></tr>
+        <tr><td><span class="chip stress">stress</span></td><td>환경 스트레스</td><td>열, 교반, 동결-융해</td></tr>
+        <tr><td><span class="chip stab">stability</span></td><td>안정성 속성·열화</td><td>응집, 탈아미드화, Tm, 점도</td></tr>
+        <tr><td><span class="chip qual">quality_outcome</span></td><td>측정 가능한 품질 결과</td><td>입자 형성, 면역원성, 전하변이</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:18px">관계는 극성(좋음/나쁨/중립)으로 묶입니다.</p>
+  <p>
+    <span class="chip pos">긍정: stabilizes · inhibits · prevents · decreases · shields</span><br/>
+    <span class="chip neg">부정: destabilizes · promotes · increases · induces · aggregates · oxidizes · deamidates · …</span><br/>
+    <span class="chip neu">중립: correlates · modifies · binds · requires</span>
+  </p>
+  <div class="callout tip">
+    <span class="t">극성 규칙 — 헷갈리는 포인트</span>
+    <code class="inl">increases</code>는 <strong>나쁜 것이 늘 때만</strong>(응집 증가),
+    <code class="inl">decreases</code>는 <strong>나쁜 것이 줄 때만</strong>(점도 감소) 씁니다.
+    그래야 “녹색=안정에 좋음 / 빨강=나쁨”이라는 색 약속이 그래프 전체에서 일관됩니다.
+  </div>
+
+  <h2>3. 2a 단계 — GPT로 인과관계 자유 추출</h2>
+  <p>전문가 프롬프트로 초록에서 관계를 뽑습니다. 두 가지 규칙이 품질을 크게 좌우합니다.</p>
+  <ul>
+    <li><strong>매개 사슬</strong>: A가 C를 거쳐 B에 영향을 주면 <code class="inl">A→C</code>와 <code class="inl">C→B</code>를 <em>둘 다</em> 뽑습니다.</li>
+    <li><strong>조건 구체화</strong>: 그냥 “pH”가 아니라 <code class="inl">low pH</code>, “temperature”가 아니라 <code class="inl">elevated temperature</code>.</li>
+  </ul>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · extraction prompt (발췌)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>EXTRACTION_SYSTEM_PROMPT = <span class="s">"""You are an expert pharmaceutical scientist
+specializing in monoclonal antibody (mAb) formulation and stability.
+
+Extract MECHANISTIC relationships relevant to mAb STABILITY from the abstract.
+
+=== 6 NODE CATEGORIES ===
+sequence / structure / formulation / stress / stability / quality_outcome
+
+=== 22 RELATION TYPES ===
+Positive : stabilizes, inhibits, prevents, decreases, shields
+Negative : destabilizes, promotes, increases, induces, aggregates,
+           oxidizes, deamidates, isomerizes, fragments, unfolds,
+           adsorbs, precipitates, degrades
+Neutral  : correlates, modifies, binds, requires
+
+=== POLARITY RULES ===
+"increases" = only bad things increasing (e.g., aggregation increases)
+"promotes"  = only bad processes (e.g., promotes aggregation)
+
+=== MEDIATION CHAIN ===
+When A affects B through mediator C, extract BOTH:  A -> C  AND  C -> B
+
+=== CONDITION SPECIFICITY ===
+Use specific terms: "low pH" not "pH", "elevated temperature" not "temperature"
+
+=== OUTPUT (JSON only) ===
+{"relations": [
+  {"cause":"...", "category_cause":"...",
+   "effect":"...", "category_effect":"...",
+   "relationship":"...", "confidence":"high/medium/low",
+   "evidence":"key phrase from abstract (max 30 words)"}
+]}"""</span></pre>
+  </div>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · extract_relations</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">def</span> extract_relations(title, abstract):
+    <span class="s">"""초록 한 편 → 관계 리스트"""</span>
+    user = <span class="s">f"Title: {title}\nAbstract: {abstract}"</span>
+    <span class="k">for</span> attempt <span class="k">in</span> <span class="k">range</span>(<span class="k">3</span>):
+        <span class="k">try</span>:
+            resp = client.chat.completions.create(
+                model=<span class="s">"gpt-5-mini"</span>,
+                messages=[{<span class="s">"role"</span>:<span class="s">"system"</span>,<span class="s">"content"</span>:EXTRACTION_SYSTEM_PROMPT},
+                          {<span class="s">"role"</span>:<span class="s">"user"</span>,<span class="s">"content"</span>:user}],
+                max_completion_tokens=<span class="k">10000</span>)
+            txt = resp.choices[<span class="k">0</span>].message.content.strip()
+            txt = txt.replace(<span class="s">"```json"</span>,<span class="s">""</span>).replace(<span class="s">"```"</span>,<span class="s">""</span>).strip()
+            <span class="k">return</span> json.loads(txt).get(<span class="s">"relations"</span>, [])
+        <span class="k">except</span> Exception:
+            time.sleep(<span class="k">2</span> + attempt*<span class="k">2</span>)
+    <span class="k">return</span> []
+
+<span class="c"># relevant=1 논문 전체를 돌며 원시 관계를 모은다 (raw)</span>
+df = pd.read_csv(<span class="s">f"{PROJECT_DIR}/step2_filtered.csv"</span>)
+df = df[df.relevant == <span class="k">1</span>]
+raw = []
+<span class="k">for</span> _, r <span class="k">in</span> tqdm(df.iterrows(), total=<span class="k">len</span>(df), desc=<span class="s">"Extracting"</span>):
+    <span class="k">for</span> rel <span class="k">in</span> extract_relations(r.title, r.abstract):
+        rel[<span class="s">"pmid"</span>] = r.pmid; raw.append(rel)
+    time.sleep(<span class="k">0.3</span>)
+df_raw = pd.DataFrame(raw)
+<span class="k">print</span>(<span class="s">f"원시 관계: {len(df_raw):,}개"</span>)</pre>
+  </div>
+  <div class="output"><span class="label">예시 출력</span>원시 관계: 39,792개  (relevant 논문 5,576편 기준)</div>
+  <div class="callout note">
+    <span class="t">신뢰성을 위한 작은 습관</span>
+    각 관계에 <code class="inl">evidence</code>(초록 속 근거 문장)와 <code class="inl">confidence</code>를 함께 저장합니다.
+    나중에 5장 검증 앱에서 “이 관계의 근거가 뭐였지?”를 바로 확인할 수 있습니다.
+  </div>
+
+  <h2>4. 2b 단계 — 용어 정규화(표현 통일)</h2>
+  <p>
+    같은 개념을 사람마다 다르게 씁니다. “high protein concentration”, “elevated mAb concentration”,
+    “concentrated antibody solution” → 전부 <code class="inl">high concentration</code> 하나로 합쳐야
+    그래프에서 한 점으로 모입니다. 표준 용어 159개를 기준표로 주고 GPT가 매핑하게 합니다.
+  </p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · normalization (개념)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>NORMALIZATION_SYSTEM_PROMPT = <span class="s">f"""You are an expert in mAb stability terminology.
+Map each input term to the most appropriate canonical term from the list.
+If none fits, keep it concise and lowercase.
+
+CANONICAL TERMS: {', '.join(canonical_list)}   # 159개 표준 용어
+
+RULES:
+- synonyms/variants → canonical  (e.g., "protein aggregation" -> "aggregation")
+- keep condition-specific terms distinct  (e.g., "low pH" vs "high pH")
+Return ONLY JSON: {{"original term": "canonical term", ...}}"""</span>
+
+<span class="c"># cause/effect 표현을 모아 배치로 표준어에 매핑</span>
+cause_map  = normalize_terms_batch(df_raw[<span class="s">"cause"</span>].tolist())
+effect_map = normalize_terms_batch(df_raw[<span class="s">"effect"</span>].tolist())
+df_raw[<span class="s">"cause_std"</span>]  = df_raw[<span class="s">"cause"</span>].map(<span class="k">lambda</span> x: cause_map.get(<span class="k">str</span>(x), x))
+df_raw[<span class="s">"effect_std"</span>] = df_raw[<span class="s">"effect"</span>].map(<span class="k">lambda</span> x: effect_map.get(<span class="k">str</span>(x), x))</pre>
+  </div>
+  <div class="output"><span class="label">예시 출력</span>Cause  : 29,161 → 16,452 unique terms
+Effect : 29,345 → 11,912 unique terms
+  [high concentration] ← "elevated mAb concentration", "concentrated antibody solution", ...
+  [aggregation]        ← "protein aggregation", "aggregate formation", ...</div>
+
+  <h2>5. 2c 단계 — 엣지로 집계</h2>
+  <p>
+    이제 같은 <code class="inl">(원인_표준 → 결과_표준)</code> 쌍을 모두 모아 하나의 <strong>엣지</strong>로 만듭니다.
+    이때 <strong>빈도</strong>(몇 번 등장했나)와 <strong>논문수</strong>(몇 편이 말했나), 대표 관계유형·대표 근거를 함께 계산합니다.
+    “여러 논문이 반복해서 말한 관계일수록 굵은 화살표”가 되는 거죠.
+  </p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · aggregate edges</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">from</span> collections <span class="k">import</span> Counter, defaultdict
+
+agg = defaultdict(<span class="k">lambda</span>: {<span class="s">"freq"</span>:<span class="k">0</span>, <span class="s">"pmids"</span>:<span class="k">set</span>(), <span class="s">"rels"</span>:Counter(), <span class="s">"ev"</span>:[]})
+<span class="k">for</span> _, r <span class="k">in</span> df_raw.iterrows():
+    key = (r.cause_std, r.effect_std)
+    agg[key][<span class="s">"freq"</span>]  += <span class="k">1</span>
+    agg[key][<span class="s">"pmids"</span>].add(<span class="k">str</span>(r.pmid))
+    agg[key][<span class="s">"rels"</span>][r.relationship] += <span class="k">1</span>
+    <span class="k">if</span> <span class="k">str</span>(r.get(<span class="s">"evidence"</span>,<span class="s">""</span>)): agg[key][<span class="s">"ev"</span>].append(<span class="k">str</span>(r.evidence)[:<span class="k">120</span>])
+
+edges = [{<span class="s">"cause"</span>:c, <span class="s">"effect"</span>:e,
+          <span class="s">"relationship"</span>: d[<span class="s">"rels"</span>].most_common(<span class="k">1</span>)[<span class="k">0</span>][<span class="k">0</span>],
+          <span class="s">"frequency"</span>: d[<span class="s">"freq"</span>], <span class="s">"num_papers"</span>: <span class="k">len</span>(d[<span class="s">"pmids"</span>]),
+          <span class="s">"sample_evidence"</span>: d[<span class="s">"ev"</span>][<span class="k">0</span>] <span class="k">if</span> d[<span class="s">"ev"</span>] <span class="k">else</span> <span class="s">""</span>}
+         <span class="k">for</span> (c,e), d <span class="k">in</span> agg.items()]
+
+df_edges = pd.DataFrame(edges).sort_values(<span class="s">"frequency"</span>, ascending=<span class="k">False</span>)
+df_edges.to_csv(<span class="s">f"{PROJECT_DIR}/step3_edges.csv"</span>, index=<span class="k">False</span>, encoding=<span class="s">"utf-8-sig"</span>)
+<span class="k">print</span>(<span class="s">f"고유 엣지: {len(df_edges):,}개"</span>)</pre>
+  </div>
+  <div class="output"><span class="label">예시 출력</span>고유 엣지: 32,939개
+
+--- 관계유형 분포 ---  modifies 7,431 · correlates 5,529 · decreases 3,657
+                     stabilizes 2,823 · increases 2,408 · induces 2,306 ...
+
+--- 빈도 상위 엣지 ---
+ thermal stress  --[promotes]-->  aggregation        (freq 29, papers 28)
+ aggregation     --[induces]-->   immunogenicity     (freq 52, papers 41)
+ fcrn binding    --[stabilizes]-> half-life          (freq 33, papers 27)
+ self-association--[increases]--> viscosity          (freq 25, papers 23)
+ excipients      --[inhibits]-->  aggregation        (freq 26, papers 26)</div>
+
+  <h2>6. 결과 읽기 — 그래프가 말하는 것</h2>
+  <p>상위 엣지만 봐도 안정성의 핵심 줄거리가 드러납니다.</p>
+  <ul>
+    <li><strong>thermal stress → aggregation</strong>: 열이 응집을 부른다(가장 고전적 경로).</li>
+    <li><strong>aggregation → immunogenicity</strong>: 응집이 면역원성으로 이어진다 → SC 전환에서 가장 경계할 사슬.</li>
+    <li><strong>excipients ⊣ aggregation</strong>: 부형제가 응집을 막는다(처방으로 개입 가능한 지점).</li>
+    <li><strong>self-association → viscosity</strong>: 고농도에서 항체끼리 뭉쳐 점도가 오른다.</li>
+  </ul>
+  <p>이 줄거리들이 4장에서 색과 굵기를 가진 <strong>그림</strong>으로, 6장에서 <strong>예측 가능한 패턴</strong>으로 살아납니다.</p>
+
+  <div class="callout warn">
+    <span class="t">주의 — 정규화·집계 셀은 한 번만</span>
+    원본 노트북에서 2b·2c는 결과 테이블을 <code class="inl">TRUNCATE</code>(비우고 다시 채움)합니다.
+    CSV로 따라 할 때도 같은 입력으로 한 번만 실행하세요. 추출(2a)은 ‘이어하기’가 되지만, 집계는 전체를 다시 만듭니다.
+  </div>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li>6 카테고리·22 관계라는 <strong>공통 어휘</strong>로 추출을 길들였습니다.</li>
+    <li>추출(2a) → 정규화(2b) → 집계(2c)로 <strong>~3.3만 개 엣지</strong>의 그래프 뼈대를 완성했습니다.</li>
+    <li>빈도 상위 엣지로 안정성의 핵심 줄거리를 읽었습니다.</li>
+  </ul>
+  <p>데이터는 준비됐습니다. 4장에서 이 엣지들을 <strong>눈으로 탐색하는 웹앱</strong>으로 띄웁니다.</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch2.html"><span class="dir">← 이전 장</span><span class="ti">2장 · 관련성 필터링</span></a>
+    <a class="next" href="ch4.html"><span class="dir">다음 장 →</span><span class="ti">4장 · 시각화 앱 만들기</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

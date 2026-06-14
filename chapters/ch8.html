@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>8장. 논문 쓰기 — Bioinformatics 포맷</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">8장 · 논문 쓰기</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 8</span>
+    <h1>논문 쓰기 — Bioinformatics 포맷</h1>
+    <p class="lead">1~7장의 결과를 한 편의 논문으로 엮습니다. 이미 완성된 실제 논문이 <strong>모범 답안</strong>입니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <strong>논문 초안 1편</strong> — Abstract부터 References까지. 실제 이 프로젝트는
+    <em>Briefings in Bioinformatics</em>(2026 제출)와 <strong>ISMB 2026 BOKR 트랙 채택</strong>으로 이어졌습니다.
+  </div>
+
+  <h2>1. 실제 논문이 모범 답안</h2>
+  <p>이 그림책의 내용은 이미 한 편의 튜토리얼 논문으로 정리돼 있습니다. 표지 정보를 그대로 익혀 두세요.</p>
+  <div class="card">
+    <p style="margin:4px 0"><strong>제목</strong> — <em>“A Generative AI-Extracted Mechanistic Knowledge Graph for mAb Stability: Construction, Analysis, and Prediction with mAb-GATED”</em></p>
+    <p style="margin:4px 0"><strong>저자</strong> — Gyu Seong Lee†, Hyeong Gyu Choi†, Ji Hye Park, Hyo Young Kim*, Dae Keun Park* (CHA Univ. / Tech Univ. of Korea)</p>
+    <p style="margin:4px 0"><strong>투고</strong> — Briefings in Bioinformatics (2026) · <strong>ISMB 2026</strong> BOKR 트랙 채택</p>
+    <p style="margin:4px 0"><strong>POC 분자</strong> — belimumab(Benlysta) — IV·SC 둘 다 FDA 승인되어 예측 검증에 이상적</p>
+  </div>
+  <div class="callout note"><span class="t">두 문서를 하나로</span>
+    본 프로젝트는 <code class="inl">mAb_GATED.docx</code>(본문)와
+    <code class="inl">mAb_GATED_4o-mini_5-mini.docx</code>(버전 비교)를 합쳐
+    <strong><code class="inl">mAb_GATED_merged.docx</code></strong>로 통합했습니다 — 본문 + <em>Appendix A(4o-mini vs 5-mini)</em> 구조.</div>
+
+  <h2>2. 어느 결과가 어느 절을 채우나</h2>
+  <p>새로 쓸 게 거의 없습니다 — <strong>각 장의 산출물이 곧 논문의 한 절</strong>입니다.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>논문 절</th><th>가져올 곳</th><th>핵심 숫자/그림</th></tr></thead>
+    <tbody>
+      <tr><td>Introduction</td><td>0장</td><td>IV→SC, 고농도 안정성 문제, belimumab POC</td></tr>
+      <tr><td>Methods · 수집</td><td>1·2장</td><td>126 쿼리·7 카테고리, 62,281편, 7,548 관련(12.1%)</td></tr>
+      <tr><td>Methods · 그래프</td><td>3장</td><td>6 카테고리·22 관계·159 표준어, 엣지 16,019</td></tr>
+      <tr><td>Methods · 모델</td><td>6장</td><td>PubMedBERT+GAT+Transformer, 약 186만 파라미터</td></tr>
+      <tr><td>Results · 성능</td><td>6장</td><td>MRR 0.8953 / H@1 0.7986 / H@3 0.9874 (베이스라인 비교)</td></tr>
+      <tr><td>Results · 허브</td><td>3장</td><td>aggregation·stability·conformational stability 허브</td></tr>
+      <tr><td>Results · 검증</td><td>5장</td><td>리뷰어 적절율 %</td></tr>
+      <tr><td>Results · 발견</td><td>7장</td><td>가설 후보 표·카드</td></tr>
+      <tr><td>Appendix A</td><td>버전 비교</td><td>5-mini: 엣지 32,939, MRR 0.9213, H@1 89.72%</td></tr>
+      <tr><td>Availability</td><td>4·5장</td><td>GitHub Pages·Vercel·Streamlit URL</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>3. 채워 쓰는 템플릿</h2>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">paper_template.md</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="c"># Abstract</span>
+<span class="k">Motivation:</span> 단일클론항체의 IV→SC 전환에서 응집·점도·산화 같은 안정성 지표가
+  공유 메커니즘으로 얽혀 있으나, 대개 개별적으로만 연구되어 왔다. ...
+<span class="k">Results:</span> PubMed 초록 62,281편에서 생성형 AI로 인과관계를 추출·정규화해
+  16,019개 엣지의 기전 지식그래프를 구축했다. 허브 노드는 aggregation·stability·
+  conformational stability. PubMedBERT+GAT 기반 mAb-GATED는 하위범주 제한 분류에서
+  Test MRR 0.8953, H@1 0.7986을 달성해 frequency·DistMult 베이스라인을 크게 앞섰다.
+<span class="k">Availability:</span> https://sdkparkforbi.github.io/mab-causal-network/
+  · https://github.com/sdkparkforbi/mab-causal-network
+<span class="k">Contact:</span> hyoyoung@tukorea.ac.kr ; dkpark@cha.ac.kr
+
+<span class="c"># Key Messages</span>
+- 문헌에서 생성형 AI로 mAb 안정성 기전 지식그래프를 대규모 자동 구축.
+- PubMedBERT+GAT 기반 mAb-GATED로 안정성 노드 예측 H@1 ≈ 0.80(물리 MRR 0.995).
+- 미관측 인과 후보를 검증 가능한 가설로 제시 · GPT-5-mini 재실행으로 추가 향상.
+
+<span class="c"># Methods 소제목 → 각 장 매핑</span>
+- Data Collection (PubMed E-utilities, 126 queries / 7 categories)  ← 1장
+- Relevance Filtering (GPT-4o-mini)                                 ← 2장
+- Extraction + Normalization + Aggregation (159 canonical terms)   ← 3장
+- mAb-GATED (PubMedBERT init → GAT → Transformer enc/dec)          ← 6장
+- Human Validation (적절율) / Evaluation (MRR, Hits@k)             ← 5·6장</pre>
+  </div>
+
+  <h2>4. 그림과 표</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>Figure 1 · mAb-GATED 구조</h4><p>임베딩→GAT→Encoder→Decoder→출력(6장 도식).</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Figure 2 · 성능 비교</h4><p>4개 모델 MRR/H@1/H@3 + 하위범주 내역(6장 표).</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>Figure 3 · 지식그래프</h4><p>4장 D3.js 시각화 스크린샷(빈도 상위 서브그래프).</p></div></div>
+    <div class="step"><div class="n">4</div><div><h4>Table · 신규 가설</h4><p>7장 상위 가설 후보 + 점수 + 근거 이웃.</p></div></div>
+  </div>
+
+  <h2>5. 참고문헌 — 주제에 맞게</h2>
+  <ul>
+    <li>언어모델: <strong>PubMedBERT</strong> / 그래프 어텐션: <strong>GAT</strong>(Veličković et al.)</li>
+    <li>문헌 인과 추출: INDRA 계열(<strong>Gyori et al.</strong>) — <em>PSB 2026 “Literature-Driven … Causal Statements”</em>가 방법론적 짝</li>
+    <li>도메인: Le Basle(2020), Desai(2023), Jiskoot(2022), belimumab(Stohl 2017 등) — 실제 논문 References 재사용</li>
+  </ul>
+
+  <h2>6. Word/PDF로 내보내기</h2>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell · pandoc</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>pandoc paper_template.md -o paper_draft.docx   <span class="c"># 마크다운 → Word</span>
+<span class="c"># 또는 완성된 mAb_GATED_merged.docx를 저널 양식에 맞춰 정리</span></pre>
+  </div>
+  <div class="callout note"><span class="t">양식 기준</span>
+    Abstract(Motivation/Results/Availability/Contact) · Key Messages · IMRaD ·
+    Funding/Data availability/References — 제공 PDF 및 <code class="inl">mAb_GATED.docx</code>와 동일한 순서.</div>
+
+  <h2>오늘의 마무리 — 그리고 그림책의 끝</h2>
+  <ul>
+    <li>각 장 산출물을 논문 절에 <strong>1:1로 매핑</strong>해 초안을 채웠습니다.</li>
+    <li>실제 논문(제목·저자·수치·ISMB 2026 채택)을 모범 답안으로 익혔습니다.</li>
+    <li>두 문서를 합친 <code class="inl">mAb_GATED_merged.docx</code>로 본문+버전 비교를 통합했습니다.</li>
+  </ul>
+  <p>
+    축하합니다 🎉 — PubMed 초록에서 시작해 <strong>지식그래프 · 웹앱 2개 · 예측 모델 · 새 가설 · 논문</strong>까지
+    전 과정을 직접 만들어 냈습니다. 막히면 <a href="appendix.html">부록</a>을 참고하세요.
+  </p>
+
+  <nav class="pager">
+    <a class="prev" href="ch7.html"><span class="dir">← 이전 장</span><span class="ti">7장 · 가설 생성</span></a>
+    <a class="next" href="appendix.html"><span class="dir">다음 →</span><span class="ti">부록 · 배포·키·트러블슈팅</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

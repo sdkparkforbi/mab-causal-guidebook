@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>0장. 오리엔테이션 — 큰 그림과 준비물</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="home" href="../index.html">🏠 그림책 목차</a>
+    <span class="spacer"></span>
+    <span class="crumb">0장 · 오리엔테이션</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="wrap">
+
+    <div class="chapter-head">
+      <span class="badge">CHAPTER 0</span>
+      <h1>오리엔테이션 — 큰 그림과 준비물</h1>
+      <p class="lead">무엇을, 왜 만드는지 먼저 그림으로 이해하고, 실습 환경을 갖춥니다.</p>
+    </div>
+
+    <p>
+      이 그림책의 목표는 단 하나입니다 — <strong>“흩어진 수천 편의 논문 속 지식을, AI를 이용해
+      하나의 ‘인과 지도(causal map)’로 엮고, 그 지도로 새로운 것을 예측하고 가설을 세우는 일”</strong>을
+      여러분의 손으로 처음부터 끝까지 재현하는 것입니다.
+    </p>
+
+    <h2>1. 우리가 풀려는 문제: IV에서 SC로</h2>
+    <p>
+      단일클론항체(mAb, monoclonal antibody)는 암·자가면역질환·감염병 치료의 핵심 의약품입니다.
+      최근에는 환자 편의를 위해 병원에서 맞는 <strong>정맥주사(IV)</strong>를
+      집에서 맞을 수 있는 <strong>피하주사(SC)</strong>로 바꾸는 흐름이 빨라지고 있습니다.
+    </p>
+    <p>
+      그런데 SC로 바꾸려면 같은 용량을 <strong>아주 작은 부피에 고농도로</strong> 담아야 합니다.
+      항체를 빽빽하게 모아두면 서로 들러붙어 <span class="chip neg">응집(aggregation)</span>이 생기고,
+      액체가 끈적해져 <span class="chip neg">점도(viscosity)</span>가 올라가며, 면역원성·약동학 문제까지 이어집니다.
+      이것이 바로 <strong>“안정성(stability) 문제”</strong>입니다.
+    </p>
+
+    <section class="hero-art" aria-label="IV에서 SC로 전환">
+      <svg viewBox="0 0 820 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IV 저농도 대용량에서 SC 고농도 소용량으로">
+        <!-- IV -->
+        <g transform="translate(40,30)">
+          <text x="110" y="0" text-anchor="middle" font-size="14" font-weight="700" fill="#2f7d8c">IV · 정맥주사</text>
+          <rect x="60" y="20" width="100" height="150" rx="14" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
+          <g fill="#2f7d8c" opacity="0.6">
+            <circle cx="90" cy="120" r="6"/><circle cx="120" cy="140" r="6"/>
+            <circle cx="135" cy="95" r="6"/><circle cx="95" cy="80" r="6"/>
+            <circle cx="120" cy="60" r="6"/>
+          </g>
+          <text x="110" y="195" text-anchor="middle" font-size="12" fill="#51626d">저농도 · 큰 부피</text>
+        </g>
+
+        <!-- 화살표 -->
+        <g transform="translate(300,110)">
+          <line x1="0" y1="0" x2="120" y2="0" stroke="#e9913f" stroke-width="4"/>
+          <path d="M120,-8 L138,0 L120,8 Z" fill="#e9913f"/>
+          <text x="60" y="-16" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">고농도화</text>
+        </g>
+
+        <!-- SC -->
+        <g transform="translate(480,30)">
+          <text x="90" y="0" text-anchor="middle" font-size="14" font-weight="700" fill="#c9742a">SC · 피하주사</text>
+          <rect x="60" y="60" width="60" height="80" rx="10" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+          <g fill="#d65a4e">
+            <circle cx="78" cy="95" r="6"/><circle cx="90" cy="92" r="6"/>
+            <circle cx="86" cy="105" r="6"/><circle cx="98" cy="100" r="6"/>
+            <circle cx="92" cy="112" r="6"/><circle cx="80" cy="118" r="6"/>
+          </g>
+          <text x="90" y="160" text-anchor="middle" font-size="12" fill="#51626d">고농도 · 작은 부피</text>
+        </g>
+
+        <!-- 문제 라벨 -->
+        <g transform="translate(640,40)">
+          <rect x="0" y="50" width="150" height="120" rx="12" fill="#fdeeec" stroke="#f4cdc6"/>
+          <text x="75" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#d65a4e">⚠ 안정성 문제</text>
+          <text x="75" y="104" text-anchor="middle" font-size="12" fill="#51626d">응집 aggregation</text>
+          <text x="75" y="124" text-anchor="middle" font-size="12" fill="#51626d">점도 viscosity</text>
+          <text x="75" y="144" text-anchor="middle" font-size="12" fill="#51626d">면역원성 ↑</text>
+        </g>
+      </svg>
+    </section>
+
+    <div class="callout note">
+      <span class="t">핵심 질문</span>
+      “무엇이 안정성을 무너뜨리고, 무엇이 안정성을 지켜주는가?” — 이 답은 한 편의 논문에 다 들어있지 않습니다.
+      40년치 수천 편에 조각조각 흩어져 있죠. <strong>우리는 그 조각들을 AI로 모아 하나의 지도로 잇습니다.</strong>
+    </div>
+
+    <div class="callout tip">
+      <span class="t">증명 사례(POC)는 belimumab</span>
+      실제 연구는 <strong>belimumab(Benlysta)</strong>를 첫 검증 분자로 씁니다 — IV·SC 제형이 둘 다 FDA 승인돼,
+      모델 예측을 실제 승인 데이터와 곧장 견줄 수 있기 때문입니다. 장기 목표는 서열·구조·제형·안정성을 한데 묶는
+      <strong>Antibody Drug Foundation Model</strong>입니다.
+    </div>
+
+    <h2>2. 이 책을 끝내면 손에 남는 것</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="n">📦</div>
+        <div><h4>GitHub 저장소 3개</h4>
+          <p>① 파이프라인 노트북 · ② 네트워크 시각화 사이트 · ③ 검증용 Streamlit 앱</p></div>
+      </div>
+      <div class="step">
+        <div class="n">🌐</div>
+        <div><h4>살아 움직이는 웹앱 2개</h4>
+          <p>GitHub Pages로 배포한 인터랙티브 인과 네트워크 + Streamlit Cloud로 배포한 검증 앱</p></div>
+      </div>
+      <div class="step">
+        <div class="n alt">📄</div>
+        <div><h4>논문 초안 1편</h4>
+          <p>제공된 Bioinformatics 양식에 맞춰, 여러분이 만든 결과로 쓴 진짜 논문 초안</p></div>
+      </div>
+    </div>
+
+    <h2>3. 전체 파이프라인 지도</h2>
+    <p>아래 8단계가 이 책의 8개 장과 1:1로 대응합니다. 각 단계의 출력은 다음 단계의 입력이 됩니다.</p>
+
+    <div class="card">
+      <div class="steps">
+        <div class="step"><div class="n">1</div><div><h4>수집 — PubMed 초록</h4><p>키워드 검색으로 mAb 안정성 논문 초록 수천 편을 내려받아 CSV로 저장합니다.</p></div></div>
+        <div class="step"><div class="n">2</div><div><h4>필터 — 관련성 판정</h4><p>GPT가 제목+초록을 읽고 “정말 안정성 메커니즘을 다루는가”를 골라냅니다.</p></div></div>
+        <div class="step"><div class="n">3</div><div><h4>추출 — 인과관계</h4><p>GPT가 <code class="inl">cause → effect</code> 관계를 뽑고, 용어를 통일하고, 빈도를 집계합니다.</p></div></div>
+        <div class="step"><div class="n alt">4</div><div><h4>시각화 앱</h4><p>집계한 엣지로 인터랙티브 네트워크를 그려 GitHub Pages에 띄웁니다.</p></div></div>
+        <div class="step"><div class="n alt">5</div><div><h4>검증 앱</h4><p>GPT의 해석이 타당한지 사람이 검수하는 Streamlit 앱을 만듭니다.</p></div></div>
+        <div class="step"><div class="n">6</div><div><h4>예측 모델 — mAb-GATED</h4><p>그래프에서 한 노드를 가리고, 이웃 맥락으로 맞히도록 GNN을 학습시킵니다.</p></div></div>
+        <div class="step"><div class="n">7</div><div><h4>가설 생성</h4><p>모델이 “있을 법하다”고 예측하지만 아직 문헌에 없는 인과 후보를 가설로 뽑습니다.</p></div></div>
+        <div class="step"><div class="n alt">8</div><div><h4>논문 쓰기</h4><p>지금까지의 결과를 Bioinformatics 논문 양식에 맞춰 한 편으로 엮습니다.</p></div></div>
+      </div>
+    </div>
+
+    <h2>4. 준비물 체크리스트</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>준비물</th><th>용도</th><th>비용</th><th>필수?</th></tr></thead>
+        <tbody>
+          <tr><td>Google 계정 + <strong>Colab</strong></td><td>모든 코드 실행 환경(브라우저만 있으면 됨)</td><td>무료</td><td>필수</td></tr>
+          <tr><td>Google Drive</td><td>중간 결과(CSV) 저장</td><td>무료</td><td>필수</td></tr>
+          <tr><td><strong>GitHub 계정</strong></td><td>저장소 만들기 · 웹앱 배포(Pages)</td><td>무료</td><td>필수</td></tr>
+          <tr><td><strong>OpenAI API 키</strong></td><td>2·3장의 GPT 필터링·인과 추출</td><td>유료(소액)</td><td>2·3장에서 필요<sup>※</sup></td></tr>
+          <tr><td>데이터베이스(MySQL)</td><td>대규모 결과 저장(선택)</td><td>무료 대안 제공</td><td>선택</td></tr>
+          <tr><td>Streamlit Cloud 계정</td><td>5장 검증 앱 배포</td><td>무료</td><td>5장에서 필요</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-soft)">
+      <sup>※</sup> API 키가 없어도 괜찮습니다. 2·3장은 <strong>미리 만들어 둔 결과 CSV</strong>로
+      건너뛰며 따라갈 수 있도록 “키 없이 진행” 경로를 함께 제공합니다.
+      직접 돌려보고 싶을 때만 키를 준비하세요.
+    </p>
+
+    <div class="callout warn">
+      <span class="t">비밀번호·API 키는 절대 코드에 그대로 적지 마세요</span>
+      이 프로젝트의 원본 노트북에는 DB 접속정보가 평문으로 들어 있었습니다(학습용).
+      여러분은 <strong>Colab Secret</strong> 또는 환경변수로 키를 관리하는 습관을 들입니다 — 0장 마지막에서 설정합니다.
+    </div>
+
+    <h2>5. Colab과 비밀값(Secret) 설정 — 딱 한 번만</h2>
+    <p>
+      Colab 노트북 왼쪽 사이드바의 🔑(열쇠) 아이콘이 <strong>Secret</strong> 보관함입니다.
+      여기에 <code class="inl">OPENAI_API_KEY</code> 같은 키를 넣어두면, 코드에서는 키 값을 적지 않고 이렇게 불러옵니다.
+    </p>
+
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">colab_secret.py</span><span class="spacer"></span>
+        <button class="copy">복사</button></div>
+<pre><span class="c"># Colab Secret에서 키를 안전하게 불러오기</span>
+<span class="k">from</span> google.colab <span class="k">import</span> userdata
+
+OPENAI_KEY = userdata.get(<span class="s">'OPENAI_API_KEY'</span>)   <span class="c"># 🔑에 등록한 이름</span>
+<span class="k">print</span>(<span class="s">'키 길이:'</span>, <span class="k">len</span>(OPENAI_KEY))         <span class="c"># 값 자체는 출력 금지!</span></pre>
+    </div>
+
+    <div class="callout colab">
+      <span class="t">실습 규칙 — 재현 가능성</span>
+      모든 노트북은 맨 앞에서 <code class="inl">seed = 42</code>로 난수를 고정합니다.
+      같은 코드를 돌리면 같은 결과가 나오도록 하는 약속입니다. 결과가 책과 조금 달라도, 흐름만 같으면 정상입니다.
+    </div>
+
+    <h2>6. 오늘의 마무리</h2>
+    <p>이 장에서 우리는 — </p>
+    <ul>
+      <li>왜 <strong>mAb 안정성</strong>이 중요한 문제인지(IV→SC, 고농도 → 응집·점도),</li>
+      <li>이 책을 끝내면 <strong>저장소 3개·웹앱 2개·논문 1편</strong>이 남는다는 것,</li>
+      <li>8단계 파이프라인의 큰 그림과 <strong>준비물</strong>을 확인했습니다.</li>
+    </ul>
+    <p>이제 1장에서 첫 번째 데이터, <strong>PubMed 초록</strong>을 직접 모아 봅니다.</p>
+
+    <!-- 페이지 넘김 -->
+    <nav class="pager">
+      <a class="prev" href="../index.html">
+        <span class="dir">← 돌아가기</span><span class="ti">그림책 표지·목차</span></a>
+      <a class="next" href="ch1.html">
+        <span class="dir">다음 장 →</span><span class="ti">1장 · PubMed에서 초록 수집하기</span></a>
+    </nav>
+
+  </div>
+</div>
+
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

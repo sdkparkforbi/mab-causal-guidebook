@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>부록. GitHub · Vercel · Streamlit · 트러블슈팅</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">부록 · 배포</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge" style="background:var(--accent)">APPENDIX</span>
+    <h1>GitHub · Vercel · Streamlit · 트러블슈팅</h1>
+    <p class="lead">각 장에서 “부록 참고”라고 한 실무 절차 — 저장소 만들기부터 웹앱 공개까지를 한곳에 모았습니다.</p>
+  </div>
+
+  <h2>A. 무엇을 어디에 올리나 — 한눈에</h2>
+  <p>핵심 원칙: <strong>Vercel은 정적/프론트엔드, Streamlit Cloud는 파이썬 서버 앱.</strong> 둘은 용도가 다릅니다.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>산출물</th><th>정체</th><th>저장소</th><th>배포처</th></tr></thead>
+      <tbody>
+        <tr><td>이 그림책</td><td>정적 HTML</td><td>repo ①</td><td><strong>Vercel</strong> 또는 GitHub Pages</td></tr>
+        <tr><td>시각화 앱 (4장)</td><td>정적 HTML + CSV</td><td>repo ②</td><td><strong>Vercel</strong> 또는 GitHub Pages</td></tr>
+        <tr><td>검증 앱 (5장)</td><td>Streamlit(파이썬)</td><td>repo ③</td><td><strong>Streamlit Cloud</strong> (Vercel ✗)</td></tr>
+        <tr><td>파이프라인 (1~3·6장)</td><td>Colab 노트북</td><td>repo ④</td><td>배포 안 함 · Colab이 직접 로드</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout note">
+    <span class="t">왜 Streamlit은 Vercel에 못 올리나요?</span>
+    Vercel은 “요청이 오면 잠깐 실행되는” 정적·서버리스 호스팅입니다.
+    Streamlit은 <strong>항상 켜져 웹소켓으로 상태를 유지</strong>하는 앱이라 맞지 않아, 전용 호스팅(Streamlit Cloud)을 씁니다.
+  </div>
+
+  <h2>B. Git 작업 흐름 — 방향이 두 개</h2>
+  <p>“클론 후 작업”은 <strong>GitHub에 repo가 이미 있을 때</strong>의 흐름입니다.
+     반대로 이 그림책처럼 <strong>로컬에 먼저 만든 폴더</strong>는 “올리기” 방향입니다. 둘 다 익혀두세요.</p>
+
+  <h3>방향 A — 로컬 폴더를 GitHub에 처음 올리기 (이 그림책)</h3>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>cd D:\Teaching\2026_1\GenAIBiC\14주차\mab-causal-guidebook
+git init
+git add .
+git commit -m <span class="s">"그림책 초안: 0~3장 + 부록"</span>
+
+<span class="c"># gh CLI가 있으면 repo 생성 + 푸시를 한 번에</span>
+gh repo create mab-causal-guidebook --public --source=. --push
+
+<span class="c"># 또는 웹에서 빈 repo를 먼저 만들었다면</span>
+git remote add origin https://github.com/&lt;아이디&gt;/mab-causal-guidebook.git
+git branch -M main
+git push -u origin main</pre>
+  </div>
+
+  <h3>방향 B — GitHub repo를 받아서 작업 (협업·다른 기기)</h3>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>git clone https://github.com/&lt;아이디&gt;/mab-causal-guidebook.git
+cd mab-causal-guidebook
+<span class="c"># ...파일 수정...</span>
+git add .
+git commit -m <span class="s">"2장 작성"</span>
+git push</pre>
+  </div>
+  <div class="callout tip">
+    <span class="t">한 번 연결되면 그 뒤로는 루프</span>
+    <strong>수정 → <code class="inl">git add</code> → <code class="inl">git commit</code> → <code class="inl">git push</code></strong> 만 반복하면 됩니다.
+  </div>
+
+  <h2>C. Vercel 배포 — 그림책 · 시각화 앱(정적)</h2>
+  <p>Vercel은 “GitHub repo를 연결해두면 <strong>push할 때마다 자동으로 다시 배포</strong>”하는 정적 호스팅입니다. 순수 HTML이라 빌드 설정이 거의 없습니다.</p>
+
+  <h3>방법 1 — 대시보드 Import (가장 쉬움, 권장)</h3>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>로그인</h4><p><a href="https://vercel.com">vercel.com</a>에 GitHub 계정으로 로그인.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Import</h4><p><strong>Add New ▸ Project ▸ Import</strong>에서 해당 repo 선택.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>설정</h4><p>Framework Preset = <strong>Other</strong>(정적). Root Directory = <code class="inl">index.html</code>이 있는 폴더.</p></div></div>
+    <div class="step"><div class="n alt">4</div><div><h4>Deploy</h4><p><code class="inl">https://&lt;프로젝트&gt;.vercel.app</code> 발급. 이후 <code class="inl">git push</code>만 하면 자동 재배포.</p></div></div>
+  </div>
+
+  <h3>방법 2 — CLI</h3>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>npm i -g vercel
+cd mab-causal-guidebook
+vercel          <span class="c"># 처음: 로그인 + 프로젝트 연결 → 미리보기 URL</span>
+vercel --prod   <span class="c"># 운영(production) URL로 배포</span></pre>
+  </div>
+
+  <h3>대안 — GitHub Pages</h3>
+  <p>결과물은 비슷합니다. <strong>Settings ▸ Pages ▸ Branch <code class="inl">main</code> / root</strong> 선택 → 저장 →
+     <code class="inl">https://&lt;아이디&gt;.github.io/&lt;저장소&gt;/</code>. <code class="inl">index.html</code>이 루트에 있어야 합니다.</p>
+  <div class="callout note">
+    <span class="t">Vercel vs Pages</span>
+    Vercel은 push마다 <em>미리보기 URL</em>을 따로 주고 커스텀 도메인·속도가 강점, Pages는 GitHub 안에서 끝나 더 단순.
+    정적 사이트면 둘 다 무료 — 수업에서는 <strong>시각화 앱은 Vercel, 그림책은 Pages</strong>로 나눠 둘 다 경험해 보길 권합니다.
+  </div>
+
+  <h2>D. Streamlit Community Cloud — 검증 앱(5장)</h2>
+  <p>검증 앱은 <code class="inl">app.py</code>로 도는 파이썬 서버라 전용 호스팅을 씁니다.</p>
+
+  <h3>저장소 구조 (repo ③)</h3>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">mab-review-app/</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>mab-review-app/
+├── app.py              <span class="c"># Streamlit 앱 본체</span>
+├── requirements.txt    <span class="c"># streamlit, openai, pandas ... (의존성)</span>
+└── .streamlit/
+    └── secrets.toml    <span class="c"># ⚠ 로컬 전용 — .gitignore로 제외! (키는 클라우드 UI에 입력)</span></pre>
+  </div>
+
+  <h3>배포 단계</h3>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>push</h4><p>위 구조를 GitHub repo에 올립니다.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>New app</h4><p><a href="https://share.streamlit.io">share.streamlit.io</a> → GitHub 로그인 → <strong>New app</strong>.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>지정</h4><p>repo / branch / <code class="inl">app.py</code> 경로 선택 → <strong>Deploy</strong>.</p></div></div>
+    <div class="step"><div class="n alt">4</div><div><h4>공개</h4><p><code class="inl">https://&lt;앱이름&gt;.streamlit.app</code> 발급. push마다 자동 재배포.</p></div></div>
+  </div>
+
+  <h3>비밀값(키·DB 비밀번호) 처리 — 중요</h3>
+  <p>코드나 repo에 <strong>절대</strong> 넣지 않습니다. 대시보드 <strong>App settings ▸ Secrets</strong>에 붙여넣고 코드에서 읽습니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">app.py</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">import</span> streamlit <span class="k">as</span> st
+api_key = st.secrets[<span class="s">"OPENAI_API_KEY"</span>]   <span class="c"># 클라우드 Secrets에서 안전하게</span></pre>
+  </div>
+  <div class="callout note"><span class="t">대안 호스팅</span> Hugging Face Spaces, Render에도 올릴 수 있지만, 학습용으론 Streamlit Cloud가 가장 간단합니다.</div>
+
+  <h2>E. 어떤 걸 고를까 — 한 장 요약</h2>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">cheatsheet</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>정적(HTML)   → Vercel 또는 GitHub Pages    ← 그림책, 시각화 앱
+파이썬 서버   → Streamlit Community Cloud    ← 검증 앱
+노트북       → GitHub 보관, Colab이 직접 로드 ← 파이프라인</pre>
+  </div>
+
+  <h2>F. DB 없이 진행하는 무료 대안</h2>
+  <ul>
+    <li>MySQL 대신 <strong>SQLite</strong>(파일 한 개) 또는 <strong>CSV</strong>로 저장 — 이 그림책의 2·3장은 이미 CSV 경로로 제공.</li>
+    <li>각 장의 입출력을 파일명으로 잇기: <code class="inl">step1_*.csv → step2_*.csv → step3_edges.csv</code>.</li>
+    <li>SQLite 예: <code class="inl">import sqlite3; con = sqlite3.connect("mab.db")</code> 후 <code class="inl">df.to_sql(...)</code>.</li>
+  </ul>
+
+  <h2>G. OpenAI API 키 발급·관리</h2>
+  <ul>
+    <li><a href="https://platform.openai.com">platform.openai.com</a>에서 키 발급 → <strong>사용량 한도</strong> 설정으로 과금 사고 방지.</li>
+    <li>Colab은 <strong>Secret(🔑)</strong>, 로컬은 환경변수, Streamlit은 <strong>Secrets</strong>에 보관.</li>
+    <li>비용 절감: 저비용 모델(<code class="inl">gpt-4o-mini</code>), 배치 호출, 결과 캐싱(이미 처리한 PMID 건너뛰기).</li>
+  </ul>
+
+  <h2>H. 자주 막히는 곳</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>상황</th><th>해결</th></tr></thead>
+    <tbody>
+      <tr><td>Colab 런타임 끊김</td><td>Drive 재마운트 · 셀 재실행. 긴 작업은 ‘이어하기’(처리된 PMID 건너뛰기) 코드 활용.</td></tr>
+      <tr><td>GPT JSON 파싱 실패</td><td>코드펜스(```) 제거 + 재시도. 출력 형식을 프롬프트에서 강제(“JSON only”).</td></tr>
+      <tr><td>Vercel/Pages 404</td><td><code class="inl">index.html</code> 위치·대소문자 확인. Pages는 활성화/빌드 대기(수 분).</td></tr>
+      <tr><td>Streamlit ModuleNotFound</td><td><code class="inl">requirements.txt</code>에 패키지 누락 → 추가 후 재배포.</td></tr>
+      <tr><td>Streamlit이 키를 못 찾음</td><td>대시보드 Secrets에 입력했는지, <code class="inl">st.secrets["..."]</code> 키 이름이 같은지 확인.</td></tr>
+      <tr><td>한글 깨짐</td><td>저장 <code class="inl">utf-8-sig</code>, 페이지 <code class="inl">&lt;meta charset="UTF-8"&gt;</code>.</td></tr>
+      <tr><td>git push 거부(인증)</td><td>HTTPS는 Personal Access Token, 또는 <code class="inl">gh auth login</code>으로 인증.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn">
+    <span class="t">보안 한 줄 요약</span>
+    비밀번호·API 키·DB 접속정보는 <strong>절대</strong> 코드나 공개 저장소에 넣지 마세요. Secret/환경변수만 사용합니다.
+  </div>
+
+  <nav class="pager">
+    <a class="prev" href="ch8.html"><span class="dir">← 이전 장</span><span class="ti">8장 · 논문 쓰기</span></a>
+    <a class="next" href="../index.html"><span class="dir">처음으로 →</span><span class="ti">그림책 표지·목차</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>1장. PubMed에서 초록 수집하기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="home" href="../index.html">🏠 그림책 목차</a>
+    <span class="spacer"></span>
+    <span class="crumb">1장 · PubMed 수집</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="wrap">
+
+    <div class="chapter-head">
+      <span class="badge">CHAPTER 1</span>
+      <h1>PubMed에서 초록 수집하기</h1>
+      <p class="lead">우리 인과 지도의 <strong>원재료</strong>인 논문 초록 수천 편을, 키워드로 검색해 내려받습니다.</p>
+    </div>
+
+    <div class="callout colab">
+      <span class="t">이 장의 결과물</span>
+      <code class="inl">step1_pubmed_abstracts.csv</code> — 약 2,000여 편의
+      <strong>pmid · 제목 · 초록 · 연도 · 저널</strong>이 담긴 표 한 장.
+      이것이 2장(필터링)의 입력이 됩니다.
+    </div>
+
+    <div class="callout note">
+      <span class="t">실제 연구 규모</span>
+      여기서는 <strong>키워드 15개</strong>로 ~2,100편을 모으는 “미니 버전”을 돌립니다.
+      실제 논문 파이프라인은 아래 <strong>7개 인과 사슬 카테고리에 걸친 126개 쿼리</strong>로
+      <strong>62,281편(1980–2026)</strong>을 누적 수집했습니다. 검색 원리는 똑같으니, 규모만 키우면 됩니다.
+    </div>
+
+    <h2>1. 큰 그림: 검색하고(eSearch) 받아오기(eFetch)</h2>
+    <p>
+      PubMed은 미국 국립의학도서관(NCBI)이 운영하는 의학 논문 데이터베이스입니다.
+      코드로 접근할 때는 <strong>E-utilities</strong>라는 공개 API를 씁니다. 두 단계만 기억하면 됩니다.
+    </p>
+
+    <section class="hero-art" aria-label="eSearch와 eFetch 흐름">
+      <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="키워드로 PMID 목록을 받고, PMID로 초록을 받는 2단계">
+        <g transform="translate(20,40)">
+          <rect x="0" y="20" width="150" height="90" rx="12" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
+          <text x="75" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#2f7d8c">키워드 검색</text>
+          <text x="75" y="74" text-anchor="middle" font-size="11" fill="#51626d">"monoclonal antibody</text>
+          <text x="75" y="90" text-anchor="middle" font-size="11" fill="#51626d">AND stability"</text>
+        </g>
+        <g transform="translate(190,85)">
+          <line x1="0" y1="0" x2="80" y2="0" stroke="#9aa7b0" stroke-width="3"/>
+          <path d="M80,-7 L96,0 L80,7 Z" fill="#9aa7b0"/>
+          <text x="48" y="-12" text-anchor="middle" font-size="12" font-weight="700" fill="#2f7d8c">eSearch</text>
+        </g>
+        <g transform="translate(300,40)">
+          <rect x="0" y="20" width="150" height="90" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
+          <text x="75" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">PMID 목록</text>
+          <text x="75" y="76" text-anchor="middle" font-size="12" fill="#9aa7b0">39013532, 30512936,</text>
+          <text x="75" y="92" text-anchor="middle" font-size="12" fill="#9aa7b0">30128780, …</text>
+        </g>
+        <g transform="translate(470,85)">
+          <line x1="0" y1="0" x2="80" y2="0" stroke="#9aa7b0" stroke-width="3"/>
+          <path d="M80,-7 L96,0 L80,7 Z" fill="#9aa7b0"/>
+          <text x="48" y="-12" text-anchor="middle" font-size="12" font-weight="700" fill="#e9913f">eFetch</text>
+        </g>
+        <g transform="translate(580,40)">
+          <rect x="0" y="20" width="220" height="90" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+          <text x="110" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">제목 · 초록 · 연도</text>
+          <text x="110" y="76" text-anchor="middle" font-size="12" fill="#51626d">XML로 받아 표로 정리</text>
+          <text x="110" y="92" text-anchor="middle" font-size="12" fill="#51626d">→ CSV 저장</text>
+        </g>
+      </svg>
+    </section>
+
+    <ul>
+      <li><strong>eSearch</strong>: 키워드를 던지면 → 조건에 맞는 논문들의 고유번호(<strong>PMID</strong>) 목록을 줍니다.</li>
+      <li><strong>eFetch</strong>: PMID 목록을 던지면 → 각 논문의 제목·초록·연도를 <strong>XML</strong>로 줍니다.</li>
+    </ul>
+
+    <h2>2. 준비 — 패키지와 임포트</h2>
+    <p>Colab에서 새 노트북을 열고 첫 셀에 붙여넣습니다. <code class="inl">xmltodict</code>는 XML을 다루기 쉬운 사전(dict)으로 바꿔줍니다.</p>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 1 · setup</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="c"># 1. 패키지 설치 및 임포트</span>
+!pip install xmltodict -q
+
+<span class="k">import</span> os, time, requests, xmltodict
+<span class="k">import</span> pandas <span class="k">as</span> pd
+<span class="k">from</span> tqdm <span class="k">import</span> tqdm
+<span class="k">print</span>(<span class="s">"✅ 준비 완료"</span>)</pre>
+    </div>
+
+    <h2>3. 결과를 저장할 폴더 — Google Drive 연결</h2>
+    <p>중간 결과를 잃지 않도록, Colab을 Google Drive에 연결하고 프로젝트 폴더를 만듭니다.</p>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 2 · drive</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">from</span> google.colab <span class="k">import</span> drive
+drive.mount(<span class="s">'/content/drive'</span>)
+
+PROJECT_DIR = <span class="s">'/content/drive/MyDrive/mAb_stability_causal_map'</span>
+os.makedirs(PROJECT_DIR, exist_ok=<span class="k">True</span>)
+<span class="k">print</span>(<span class="s">f"✅ 프로젝트 폴더: {PROJECT_DIR}"</span>)</pre>
+    </div>
+
+    <h2>4. 검색 키워드 설계 — 왜 15개나?</h2>
+    <p>
+      “monoclonal antibody AND stability” 한 줄만으로는 놓치는 논문이 많습니다.
+      <strong>mAb</strong>를 부르는 다른 말(therapeutic antibody, IgG, bispecific…), <strong>안정성</strong>을 가리키는
+      다른 말(aggregation, degradation, shelf life…)을 골고루 섞어 <strong>그물을 넓게</strong> 칩니다.
+    </p>
+    <div class="callout tip">
+      <span class="t">검색어 설계가 곧 데이터 품질</span>
+      나중에 키워드를 추가하고 이 노트북만 다시 돌리면 데이터가 늘어납니다.
+      “핵심 조합 → 동의어 확장”의 2단 구성을 기억하세요.
+    </div>
+
+    <p>실제 논문은 검색어를 <strong>인과 사슬</strong>(sequence → structure → formulation·stress → stability → quality → PK/PD)을 따라
+       7개 카테고리·126개 쿼리로 확장했습니다. 미니 버전을 키울 때 참고하세요.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>카테고리</th><th>예시 검색어</th></tr></thead>
+        <tbody>
+          <tr><td>1. Sequence</td><td>"amino acid sequence", "CDR", "aggregation-prone region", "point mutation"</td></tr>
+          <tr><td>2. Structure</td><td>"conformational stability", "Fab domain", "Fc region", "tertiary structure"</td></tr>
+          <tr><td>3. Formulation</td><td>"excipient", "pH", "polysorbate", "histidine buffer", "sucrose"</td></tr>
+          <tr><td>4. Stress</td><td>"thermal stress", "agitation", "freeze-thaw", "oxidative stress"</td></tr>
+          <tr><td>5. Stability</td><td>"aggregation", "viscosity", "oxidation", "deamidation", "fragmentation"</td></tr>
+          <tr><td>6. Quality Outcome</td><td>"immunogenicity", "potency", "subvisible particles", "turbidity"</td></tr>
+          <tr><td>7. PK/PD/Safety</td><td>"pharmacokinetics", "bioavailability", "half-life", "clearance"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 3 · queries</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="c"># 핵심: stability + mAb (및 유사어). 나중에 키워드를 추가해 재실행 가능</span>
+SEARCH_QUERIES = [
+    <span class="s">'"monoclonal antibody" AND "stability"'</span>,
+    <span class="s">'"monoclonal antibodies" AND "stability"'</span>,
+    <span class="s">'"mAb" AND "stability" AND "formulation"'</span>,
+    <span class="s">'"therapeutic antibody" AND "stability"'</span>,
+    <span class="s">'"antibody drug" AND "stability"'</span>,
+    <span class="c"># --- mAb 유사어 확장 ---</span>
+    <span class="s">'"biologic" AND "antibody" AND "stability"'</span>,
+    <span class="s">'"IgG" AND "stability" AND "formulation"'</span>,
+    <span class="s">'"bispecific antibody" AND "stability"'</span>,
+    <span class="s">'"antibody-drug conjugate" AND "stability"'</span>,
+    <span class="s">'"fusion protein" AND "Fc" AND "stability"'</span>,
+    <span class="c"># --- stability 유사어 확장 ---</span>
+    <span class="s">'"monoclonal antibody" AND ("degradation" OR "shelf life")'</span>,
+    <span class="s">'"monoclonal antibody" AND ("aggregation" OR "fragmentation")'</span>,
+    <span class="s">'"monoclonal antibody" AND "accelerated stability"'</span>,
+    <span class="s">'"monoclonal antibody" AND ("thermal stability" OR "colloidal stability")'</span>,
+    <span class="s">'"monoclonal antibody" AND ("physicochemical stability" OR "long-term stability")'</span>,
+]
+
+PUBMED_EMAIL = <span class="s">"your_email@example.com"</span>   <span class="c"># NCBI 권장: 본인 이메일</span>
+MAX_RESULTS_PER_QUERY = <span class="k">200</span>              <span class="c"># 쿼리당 최대 논문 수</span>
+<span class="k">print</span>(<span class="s">f"🔍 검색 쿼리 {len(SEARCH_QUERIES)}개 설정됨"</span>)</pre>
+    </div>
+
+    <h2>5. 크롤링 함수 두 개</h2>
+    <p>앞서 본 <strong>eSearch · eFetch</strong>를 각각 함수로 감쌉니다.</p>
+
+    <h3>(1) <code class="inl">search_pubmed</code> — 키워드 → PMID 목록</h3>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 4a · search_pubmed</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">def</span> search_pubmed(query, max_results=<span class="k">200</span>):
+    <span class="s">"""PubMed eSearch → PMID 목록 반환"""</span>
+    url = <span class="s">"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"</span>
+    params = {
+        <span class="s">"db"</span>: <span class="s">"pubmed"</span>, <span class="s">"term"</span>: query,
+        <span class="s">"retmax"</span>: max_results, <span class="s">"retmode"</span>: <span class="s">"json"</span>,
+        <span class="s">"email"</span>: PUBMED_EMAIL,
+    }
+    resp = requests.get(url, params=params); resp.raise_for_status()
+    data = resp.json()
+    pmids = data.get(<span class="s">"esearchresult"</span>, {}).get(<span class="s">"idlist"</span>, [])
+    total = <span class="k">int</span>(data.get(<span class="s">"esearchresult"</span>, {}).get(<span class="s">"count"</span>, <span class="s">"0"</span>))
+    <span class="k">return</span> pmids, total</pre>
+    </div>
+
+    <h3>(2) <code class="inl">fetch_abstracts</code> — PMID → 제목·초록·연도</h3>
+    <p>
+      PMID를 <strong>200개씩 묶어</strong> 한 번에 받아옵니다(배치). 받은 XML에서 제목·초록·연도·저널을 꺼내고,
+      초록이 너무 짧은(50자 미만) 항목은 버립니다. NCBI 예절을 지키려 요청 사이에 잠깐 쉽니다(<code class="inl">time.sleep</code>).
+    </p>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 4b · fetch_abstracts</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">def</span> fetch_abstracts(pmids):
+    <span class="s">"""PubMed eFetch → title, abstract, year 추출"""</span>
+    url = <span class="s">"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"</span>
+    articles, batch_size = [], <span class="k">200</span>
+
+    <span class="k">for</span> i <span class="k">in</span> tqdm(<span class="k">range</span>(<span class="k">0</span>, <span class="k">len</span>(pmids), batch_size), desc=<span class="s">"배치 다운로드"</span>):
+        batch = pmids[i:i+batch_size]
+        params = {<span class="s">"db"</span>: <span class="s">"pubmed"</span>, <span class="s">"id"</span>: <span class="s">","</span>.join(batch),
+                  <span class="s">"rettype"</span>: <span class="s">"xml"</span>, <span class="s">"retmode"</span>: <span class="s">"xml"</span>, <span class="s">"email"</span>: PUBMED_EMAIL}
+        resp = requests.get(url, params=params); resp.raise_for_status()
+        parsed = xmltodict.parse(resp.text)
+
+        items = parsed.get(<span class="s">"PubmedArticleSet"</span>, {}).get(<span class="s">"PubmedArticle"</span>, [])
+        <span class="k">if</span> <span class="k">isinstance</span>(items, <span class="k">dict</span>): items = [items]
+
+        <span class="k">for</span> art <span class="k">in</span> items:
+            <span class="k">try</span>:
+                medline = art[<span class="s">"MedlineCitation"</span>]
+                pmid = medline[<span class="s">"PMID"</span>][<span class="s">"#text"</span>] <span class="k">if</span> <span class="k">isinstance</span>(medline[<span class="s">"PMID"</span>], <span class="k">dict</span>) <span class="k">else</span> medline[<span class="s">"PMID"</span>]
+                a = medline[<span class="s">"Article"</span>]
+                title = a.get(<span class="s">"ArticleTitle"</span>, <span class="s">""</span>)
+                <span class="k">if</span> <span class="k">isinstance</span>(title, <span class="k">dict</span>): title = title.get(<span class="s">"#text"</span>, <span class="s">""</span>)
+
+                <span class="c"># 초록은 여러 단락(Label)일 수 있어 합쳐 줍니다</span>
+                ab = a.get(<span class="s">"Abstract"</span>, {}).get(<span class="s">"AbstractText"</span>, <span class="s">""</span>)
+                <span class="k">if</span> <span class="k">isinstance</span>(ab, <span class="k">list</span>):
+                    parts = []
+                    <span class="k">for</span> p <span class="k">in</span> ab:
+                        <span class="k">if</span> <span class="k">isinstance</span>(p, <span class="k">dict</span>):
+                            lab, txt = p.get(<span class="s">"@Label"</span>, <span class="s">""</span>), p.get(<span class="s">"#text"</span>, <span class="s">""</span>)
+                            parts.append(<span class="s">f"{lab}: {txt}"</span> <span class="k">if</span> lab <span class="k">else</span> txt)
+                        <span class="k">else</span>: parts.append(<span class="k">str</span>(p))
+                    abstract = <span class="s">" "</span>.join(parts)
+                <span class="k">elif</span> <span class="k">isinstance</span>(ab, <span class="k">dict</span>): abstract = ab.get(<span class="s">"#text"</span>, <span class="s">""</span>)
+                <span class="k">else</span>: abstract = <span class="k">str</span>(ab)
+
+                year = a.get(<span class="s">"Journal"</span>,{}).get(<span class="s">"JournalIssue"</span>,{}).get(<span class="s">"PubDate"</span>,{}).get(<span class="s">"Year"</span>, <span class="s">"N/A"</span>)
+                journal = a.get(<span class="s">"Journal"</span>, {}).get(<span class="s">"Title"</span>, <span class="s">"N/A"</span>)
+
+                <span class="k">if</span> abstract <span class="k">and</span> abstract != <span class="s">"None"</span> <span class="k">and</span> <span class="k">len</span>(abstract) &gt; <span class="k">50</span>:
+                    articles.append({<span class="s">"pmid"</span>: pmid, <span class="s">"title"</span>: title,
+                                     <span class="s">"abstract"</span>: abstract, <span class="s">"year"</span>: year, <span class="s">"journal"</span>: journal})
+            <span class="k">except</span> (<span class="k">KeyError</span>, <span class="k">TypeError</span>):
+                <span class="k">continue</span>
+        time.sleep(<span class="k">0.4</span>)   <span class="c"># NCBI rate limit 준수</span>
+    <span class="k">return</span> articles</pre>
+    </div>
+
+    <h2>6. 크롤링 실행</h2>
+    <p>15개 쿼리를 차례로 검색해 PMID를 모으고(<strong>중복 자동 제거</strong>), 그 PMID들의 초록을 한꺼번에 받습니다.</p>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 5 · run search</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>all_pmids = <span class="k">set</span>()
+<span class="k">for</span> i, query <span class="k">in</span> <span class="k">enumerate</span>(SEARCH_QUERIES, <span class="k">1</span>):
+    pmids, total = search_pubmed(query, max_results=MAX_RESULTS_PER_QUERY)
+    new = <span class="k">set</span>(pmids) - all_pmids
+    all_pmids.update(pmids)
+    <span class="k">print</span>(<span class="s">f"[{i:2d}] 검색 {len(pmids)}건 (전체 {total}건), 신규 {len(new)}건"</span>)
+    time.sleep(<span class="k">0.5</span>)
+<span class="k">print</span>(<span class="s">f"📊 중복 제거 후 총 PMID: {len(all_pmids)}건"</span>)</pre>
+    </div>
+    <div class="output"><span class="label">예시 출력</span>[ 1] 검색 200건 (전체 3161건), 신규 200건
+[ 2] 검색 200건 (전체 3851건), 신규 154건
+[ 3] 검색 200건 (전체 336건),  신규 172건
+   ...
+[15] 검색 101건 (전체 101건),  신규 67건
+📊 중복 제거 후 총 PMID: 2127건</div>
+
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 6 · download abstracts</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>articles = fetch_abstracts(<span class="k">list</span>(all_pmids))
+<span class="k">print</span>(<span class="s">f"✅ 수집 완료: {len(articles)}건 (초록이 있는 논문만)"</span>)</pre>
+    </div>
+    <div class="output"><span class="label">예시 출력</span>배치 다운로드: 100%|██████████| 11/11 [00:23&lt;00:00,  2.10s/it]
+✅ 수집 완료: 2124건 (초록이 있는 논문만)</div>
+
+    <h2>7. CSV로 저장하고 살펴보기</h2>
+    <div class="code">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="fn">cell 7 · save csv</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>df = pd.DataFrame(articles)
+csv_path = os.path.join(PROJECT_DIR, <span class="s">"step1_pubmed_abstracts.csv"</span>)
+df.to_csv(csv_path, index=<span class="k">False</span>, encoding=<span class="s">"utf-8-sig"</span>)   <span class="c"># 한글 깨짐 방지</span>
+
+<span class="k">print</span>(<span class="s">f"💾 저장: {csv_path}"</span>)
+<span class="k">print</span>(<span class="s">f"총 {len(df)}편 · 연도 {df['year'].min()}~ · 평균 초록 {df['abstract'].str.len().mean():.0f}자"</span>)</pre>
+    </div>
+    <div class="output"><span class="label">예시 출력</span>💾 저장: .../mAb_stability_causal_map/step1_pubmed_abstracts.csv
+총 2124편 · 평균 초록 1574자
+연도별: 2026: 213편 · 2025: 545편 · 2024: 261편 · 2023: 149편 ...</div>
+
+    <div class="callout note">
+      <span class="t">컬럼 구성</span>
+      <code class="inl">pmid · title · abstract · year · journal</code> — 딱 다섯 칸.
+      단순하지만 이 표가 앞으로 모든 단계의 출발점입니다.
+    </div>
+
+    <h2>막힐 때 — 자주 보는 문제</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>증상</th><th>원인 / 해결</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inl">HTTP 429</code> 또는 응답 지연</td><td>요청이 너무 빠름 → <code class="inl">time.sleep</code> 값을 키우세요. (이메일 기입 권장)</td></tr>
+          <tr><td>초록이 비어 수집 수가 적음</td><td>일부 논문은 초록이 없음 → 정상. 50자 미만 필터 때문에 제외됩니다.</td></tr>
+          <tr><td>CSV 한글·기호 깨짐</td><td>저장 시 <code class="inl">encoding="utf-8-sig"</code> 확인.</td></tr>
+          <tr><td>Drive가 다시 마운트 요구</td><td>런타임이 끊기면 재마운트 필요 → cell 2 다시 실행.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>오늘의 마무리</h2>
+    <ul>
+      <li>PubMed E-utilities의 <strong>eSearch → eFetch</strong> 2단계를 이해했습니다.</li>
+      <li>동의어를 섞은 <strong>15개 키워드</strong>로 그물을 넓게 쳐 ~2,100편을 모았습니다.</li>
+      <li>결과를 <code class="inl">step1_pubmed_abstracts.csv</code>로 저장했습니다.</li>
+    </ul>
+    <p>
+      하지만 이 2,100편이 전부 “안정성 메커니즘” 논문일까요? 아닙니다 —
+      항체를 단지 검출 도구로 쓴 논문도 섞여 있습니다.
+      2장에서 <strong>GPT에게 옥석을 가리는 일</strong>을 맡깁니다.
+    </p>
+
+    <nav class="pager">
+      <a class="prev" href="ch0.html">
+        <span class="dir">← 이전 장</span><span class="ti">0장 · 오리엔테이션</span></a>
+      <a class="next" href="ch2.html">
+        <span class="dir">다음 장 →</span><span class="ti">2장 · GPT로 관련성 필터링하기</span></a>
+    </nav>
+
+  </div>
+</div>
+
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

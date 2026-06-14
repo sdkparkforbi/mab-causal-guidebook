@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>7장. 새로운 가설 만들기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">7장 · 가설 생성</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 7</span>
+    <h1>새로운 가설 만들기</h1>
+    <p class="lead">모델이 “있을 법하다”고 보지만 <strong>아직 문헌엔 없는</strong> 인과 후보를 찾아, 검증 가능한 가설로 정리합니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <strong>가설 후보 표</strong> — (원인 → 결과, 예측 점수, 카테고리, 근거 이웃, 문헌 부재 확인).
+    8장 논문의 ‘새로운 발견’ 절이 됩니다.
+  </div>
+
+  <div class="callout tip">
+    <span class="t">여기서부터는 ‘재현’이 아니라 ‘창작’</span>
+    1~6장은 만들어진 길을 따라왔다면, 이제 모델로 <strong>아무도 정리하지 않은 지식 후보</strong>를 제안합니다. 이 책의 클라이맥스입니다.
+  </div>
+
+  <h2>1. 아이디어 — 빈칸은 곧 가설</h2>
+  <p>
+    6장 모델은 “이웃을 보고 가운데 노드”를 맞힙니다. 이 능력을 뒤집으면,
+    <strong>아직 연결되지 않은 두 노드 사이에 화살표가 있어야 할 확률</strong>을 점수로 매길 수 있습니다.
+    점수는 높은데 실제 데이터엔 없는 쌍 = <strong>유망한 가설</strong>입니다. 이를 <em>link prediction</em>이라 합니다.
+  </p>
+  <section class="hero-art" aria-label="link prediction">
+    <svg viewBox="0 0 820 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="관측된 엣지와 예측된 미관측 엣지">
+      <defs><marker id="a7" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa7b0"/></marker></defs>
+      <line x1="120" y1="60" x2="320" y2="60" stroke="#2e9e6b" stroke-width="4" marker-end="url(#a7)"/>
+      <line x1="320" y1="60" x2="320" y2="120" stroke="#9aa7b0" stroke-width="3" marker-end="url(#a7)"/>
+      <line x1="120" y1="120" x2="320" y2="120" stroke="#d65a4e" stroke-width="3" marker-end="url(#a7)"/>
+      <!-- 예측된 새 엣지 -->
+      <line x1="120" y1="60" x2="120" y2="120" stroke="#e9913f" stroke-width="4" stroke-dasharray="7 5" marker-end="url(#a7)"/>
+      <text x="60" y="95" font-size="12" fill="#c9742a" font-weight="700">예측?</text>
+      <g font-size="11" fill="#fff" text-anchor="middle" font-weight="700">
+        <circle cx="120" cy="60" r="22" fill="#2f9e8f"/><text x="120" y="64">arginine</text>
+        <circle cx="120" cy="120" r="22" fill="#d65a8a"/><text x="120" y="124">viscosity</text>
+        <circle cx="320" cy="60" r="20" fill="#7c6cd1"/><text x="320" y="64">charge</text>
+        <circle cx="320" cy="120" r="22" fill="#d65a8a"/><text x="320" y="124">self-assoc.</text>
+      </g>
+      <g transform="translate(480,40)">
+        <rect x="0" y="20" width="300" height="90" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+        <text x="150" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">가설 후보</text>
+        <text x="150" y="72" text-anchor="middle" font-size="12" fill="#51626d">“arginine → viscosity (감소?)”</text>
+        <text x="150" y="92" text-anchor="middle" font-size="11" fill="#9aa7b0">점수 높음 · 문헌엔 직접 연결 없음</text>
+      </g>
+    </svg>
+  </section>
+
+  <h2>2. 미관측 쌍에 점수 매기기</h2>
+  <p>현재 그래프에 <strong>없는</strong> (원인, 결과) 쌍 전체에 모델 점수를 매깁니다. 단, 말이 되는 방향만 — 카테고리 제약을 둡니다(예: <span class="chip stress">stress</span> → <span class="chip stab">stability</span>는 가능, 그 반대는 제외).</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · score unobserved (개념)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>observed = <span class="k">set</span>(<span class="k">zip</span>(df.cause, df.effect))     <span class="c"># 이미 문헌에 있는 쌍</span>
+candidates = []
+<span class="k">for</span> c <span class="k">in</span> cause_nodes:
+    <span class="k">for</span> e <span class="k">in</span> stability_nodes:
+        <span class="k">if</span> (c, e) <span class="k">in</span> observed: <span class="k">continue</span>         <span class="c"># 새 후보만</span>
+        <span class="k">if</span> <span class="k">not</span> allowed_direction(cat[c], cat[e]): <span class="k">continue</span>  <span class="c"># 카테고리 제약</span>
+        score = model.score(c, e)                <span class="c"># 6장 모델로 점수화</span>
+        candidates.append((c, e, score))
+
+top = <span class="k">sorted</span>(candidates, key=<span class="k">lambda</span> x: -x[<span class="k">2</span>])[:<span class="k">30</span>]   <span class="c"># 상위 30개</span></pre>
+  </div>
+
+  <h2>3. 상위 후보 → 문헌으로 교차 확인</h2>
+  <p>모델이 높게 본 후보가 <strong>정말 문헌에 없는지</strong> PubMed로 한 번 더 확인합니다(1장의 검색을 재사용). 이미 보고된 관계면 ‘발견’이 아니라 ‘검증’일 뿐이니 걸러냅니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · novelty check</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">for</span> c, e, s <span class="k">in</span> top:
+    _, n_hits = search_pubmed(<span class="s">f'"{c}" AND "{e}"'</span>, max_results=<span class="k">1</span>)   <span class="c"># 1장 함수</span>
+    novelty = <span class="s">"신규 후보"</span> <span class="k">if</span> n_hits == <span class="k">0</span> <span class="k">else</span> <span class="s">f"기존 {n_hits}건"</span>
+    <span class="k">print</span>(<span class="s">f"{c:25s} → {e:20s}  score={s:.3f}  {novelty}"</span>)</pre>
+  </div>
+
+  <h2>4. 가설 카드로 정리</h2>
+  <p>숫자만으로는 가설이 아닙니다. 각 후보를 <strong>검증 가능한 문장</strong>으로 다듬습니다.</p>
+  <div class="card">
+    <h3 style="margin-top:0">가설 카드 (예시)</h3>
+    <ul>
+      <li><strong>가설</strong>: arginine 농도를 높이면 self-association 감소를 매개로 <strong>점도가 낮아질 것이다.</strong></li>
+      <li><strong>근거 이웃</strong>: <em>arginine ⊣ self-association</em>, <em>self-association → viscosity</em> (두 엣지가 사슬을 이룸)</li>
+      <li><strong>모델 점수</strong>: 0.86 (상위 3%)</li>
+      <li><strong>문헌 상태</strong>: 직접 연결 보고 없음(신규 후보)</li>
+      <li><strong>검증 방법</strong>: arginine 0–150 mM 제형에서 점도·DLS 측정</li>
+    </ul>
+  </div>
+
+  <h2>5. 우선순위화 — 무엇을 먼저 시험할까</h2>
+  <p>후보가 많으면 <strong>임팩트 × 검증 난이도</strong>로 정렬해, 실제로 해볼 만한 1~3개를 고릅니다.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>기준</th><th>질문</th></tr></thead>
+    <tbody>
+      <tr><td>임팩트</td><td>맞다면 SC 제형 개발에 실제로 도움이 되나?</td></tr>
+      <tr><td>검증 난이도</td><td>기존 장비·시료로 빠르게 확인 가능한가?</td></tr>
+      <tr><td>신규성</td><td>정말 아무도 직접 보고하지 않았나?</td></tr>
+      <tr><td>기전 타당성</td><td>이웃 사슬로 말이 되는 메커니즘이 그려지나?</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn">
+    <span class="t">예측 ≠ 사실</span>
+    모델 점수가 높다고 참은 아닙니다. 가설은 <strong>실험으로 반증 가능</strong>해야 가치가 있습니다.
+    이 겸손한 태도가 8장 Discussion(한계)의 핵심입니다.
+  </div>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li><strong>link prediction</strong>으로 미관측 인과 쌍에 점수를 매겼습니다.</li>
+    <li>문헌 대조로 <strong>진짜 신규 후보</strong>를 걸러, 가설 카드로 정리했습니다.</li>
+    <li>임팩트·난이도로 <strong>우선순위</strong>를 정했습니다.</li>
+  </ul>
+  <p>이제 1~7장의 모든 결과가 손에 있습니다. 8장에서 이를 한 편의 <strong>논문</strong>으로 엮습니다.</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch6.html"><span class="dir">← 이전 장</span><span class="ti">6장 · mAb-GATED</span></a>
+    <a class="next" href="ch8.html"><span class="dir">다음 장 →</span><span class="ti">8장 · 논문 쓰기</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2장. GPT로 관련성 필터링하기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">2장 · 관련성 필터링</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 2</span>
+    <h1>GPT로 관련성 필터링하기</h1>
+    <p class="lead">1장에서 모은 ~2,100편 중 “진짜로 mAb 안정성 메커니즘을 다루는” 논문만 GPT에게 골라내게 합니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <code class="inl">step2_filtered.csv</code> — 각 논문에 <code class="inl">relevant</code>(1/0)과
+    GPT가 남긴 <strong>한 줄 판정 이유</strong>가 붙은 표. 3장에서는 <code class="inl">relevant=1</code>만 사용합니다.
+  </div>
+
+  <div class="callout note">
+    <span class="t">실제 연구 규모 — 그리고 모델에 따라 엄격함이 다르다</span>
+    실제 논문은 62,281편을 필터링해 <strong>7,548편(12.1%)</strong>을 남겼습니다(GPT-4o-mini, 약 21시간).
+    더 엄격한 <strong>GPT-5-mini</strong>로 다시 돌리면 <strong>5,576편(9.0%)</strong>만 남아, 도구로만 쓰인 논문·임상 효능 논문을 더 충실히 걸러냅니다.
+  </div>
+
+  <h2>1. 왜 필터가 필요한가 — 체로 거르기</h2>
+  <p>
+    “monoclonal antibody” 가 들어갔다고 다 안정성 논문은 아닙니다. 항체를 단지
+    <strong>검출 시약(ELISA)</strong>으로 쓴 논문, 안정성 얘기는 없는 <strong>임상 효능</strong> 논문도 함께 걸려 들어옵니다.
+    이런 잡음을 그대로 두면 3장의 인과 추출이 엉뚱한 관계를 캐냅니다. 그래서 먼저 체로 한 번 거릅니다.
+  </p>
+
+  <section class="hero-art" aria-label="GPT 체로 거르기">
+    <svg viewBox="0 0 820 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="혼합된 논문을 GPT가 관련/제외로 분류">
+      <g transform="translate(20,40)">
+        <rect x="0" y="20" width="150" height="110" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
+        <text x="75" y="46" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">2,124편 (섞임)</text>
+        <g font-size="11" text-anchor="middle">
+          <circle cx="40" cy="78" r="13" fill="#2e9e6b"/><text x="40" y="82" fill="#fff">stab</text>
+          <circle cx="78" cy="95" r="13" fill="#d65a4e"/><text x="78" y="99" fill="#fff">ELISA</text>
+          <circle cx="115" cy="78" r="13" fill="#2e9e6b"/><text x="115" y="82" fill="#fff">stab</text>
+          <circle cx="58" cy="115" r="13" fill="#9aa7b0"/><text x="58" y="119" fill="#fff">효능</text>
+          <circle cx="100" cy="115" r="13" fill="#2e9e6b"/><text x="100" y="119" fill="#fff">stab</text>
+        </g>
+      </g>
+      <g transform="translate(195,95)">
+        <line x1="0" y1="0" x2="80" y2="0" stroke="#2f7d8c" stroke-width="3"/>
+        <path d="M80,-7 L96,0 L80,7 Z" fill="#2f7d8c"/>
+        <text x="48" y="-12" text-anchor="middle" font-size="12" font-weight="700" fill="#2f7d8c">GPT 판정</text>
+      </g>
+      <g transform="translate(310,30)">
+        <text x="75" y="14" text-anchor="middle" font-size="20">🔍</text>
+        <rect x="0" y="24" width="150" height="62" rx="12" fill="#eaf6f1" stroke="#2e9e6b" stroke-width="2"/>
+        <text x="75" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#2e9e6b">관련 = 1</text>
+        <text x="75" y="72" text-anchor="middle" font-size="11" fill="#51626d">안정성 메커니즘</text>
+        <rect x="0" y="100" width="150" height="62" rx="12" fill="#fdeeec" stroke="#d65a4e" stroke-width="2"/>
+        <text x="75" y="128" text-anchor="middle" font-size="13" font-weight="700" fill="#d65a4e">제외 = 0</text>
+        <text x="75" y="148" text-anchor="middle" font-size="11" fill="#51626d">시약·효능만</text>
+      </g>
+      <g transform="translate(500,95)">
+        <line x1="0" y1="0" x2="60" y2="0" stroke="#9aa7b0" stroke-width="3" stroke-dasharray="5 4"/>
+        <path d="M60,-7 L76,0 L60,7 Z" fill="#9aa7b0"/>
+      </g>
+      <g transform="translate(590,55)">
+        <rect x="0" y="20" width="200" height="80" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+        <text x="100" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">step2_filtered.csv</text>
+        <text x="100" y="74" text-anchor="middle" font-size="11" fill="#51626d">relevant + reason 컬럼 추가</text>
+      </g>
+    </svg>
+  </section>
+
+  <h2>2. 판정 기준을 먼저 ‘글’로 정한다</h2>
+  <p>코드를 짜기 전에, <strong>무엇이 관련이고 무엇이 아닌지</strong>를 사람 말로 또렷이 정의합니다. 이 정의가 그대로 프롬프트가 됩니다.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>관련 있음 (relevant=1)</th><th>관련 없음 (relevant=0)</th></tr></thead>
+      <tbody>
+        <tr><td>물리적 안정성: 응집·점도·입자·혼탁</td><td>mAb를 검출 도구로만 사용(ELISA 시약, 유세포)</td></tr>
+        <tr><td>화학적 안정성: 산화·탈아미드화·이성질화·단편화·전하변이</td><td>안정성 내용 없는 임상 효능/시험</td></tr>
+        <tr><td>생물학적 안정성: 형태 안정성·Tm·결합활성·역가</td><td>mAb와 무관한 다른 단백질의 안정성</td></tr>
+        <tr><td>제형 조건(부형제·pH·완충액·농도)의 영향</td><td>안정성 초점 없는 제조 공정</td></tr>
+        <tr><td>스트레스(동결-융해·열·교반·빛)의 영향, 시험법(SEC·DLS·DSC…)</td><td></td></tr>
+        <tr><td>불안정성의 하류 결과: 면역원성·ADA·PK 변화·안전성</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>3. 기준을 시스템 프롬프트로 옮기기</h2>
+  <p>
+    위 기준을 GPT의 <strong>시스템 프롬프트</strong>에 그대로 넣고, 출력은 반드시
+    <code class="inl">[{pmid, relevant, reason}]</code> 형태의 JSON 배열로만 내도록 못 박습니다(파싱하기 쉽게).
+  </p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · system prompt</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>SYSTEM_PROMPT = <span class="s">"""You are an expert in monoclonal antibody (mAb) formulation and stability.
+
+Your task: Judge whether each article contains MECHANISTIC information
+relevant to mAb stability.
+
+RELEVANT (relevant=true) if the article covers ANY of:
+- Physical stability: aggregation, viscosity, particle formation, turbidity
+- Chemical stability: oxidation, deamidation, isomerization, fragmentation, charge variants
+- Biological stability: conformational stability, Tm, binding activity, potency, ADCC
+- Effect of formulation (excipients, pH, buffer, concentration) on mAb stability
+- Effect of stress (freeze-thaw, thermal, agitation, light) on mAb stability
+- Stability testing methods (SEC-HPLC, DLS, DSC, CE-SDS, ...)
+- Downstream consequences: immunogenicity, ADA, PK changes, safety
+
+NOT RELEVANT (relevant=false) if:
+- mAb used only as a detection tool (ELISA reagent, flow cytometry)
+- Clinical efficacy/trial with no stability content
+- Stability of non-mAb molecules
+
+Respond ONLY with a JSON array, one object per article:
+[{"pmid": "...", "relevant": true/false, "reason": "one sentence"}]
+No markdown, no explanation outside the JSON array."""</span></pre>
+  </div>
+  <div class="callout tip">
+    <span class="t">프롬프트가 곧 ‘채점 기준표’</span>
+    결과가 마음에 안 들면 코드가 아니라 <strong>이 프롬프트를 고칩니다.</strong>
+    “이런 것도 관련으로 봐줘/빼줘”를 한두 줄 추가하면 판정이 달라집니다.
+  </div>
+
+  <h2>4. 배치 판정 함수 — 10편을 한 번에</h2>
+  <p>
+    한 편씩 호출하면 느리고 비쌉니다. <strong>10편을 한 묶음</strong>으로 보내 한 번에 판정하면
+    호출 수가 1/10로 줍니다. 실패하면 잠깐 쉬고 재시도하고, 끝내 실패하면 보수적으로 ‘관련(1)’ 처리해 흘려보내지 않습니다.
+  </p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · filter_batch</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">from</span> openai <span class="k">import</span> OpenAI
+<span class="k">import</span> json, time
+client = OpenAI(api_key=OPENAI_KEY)   <span class="c"># 키는 Colab Secret에서 (0장 참고)</span>
+
+BATCH_SIZE, MAX_RETRIES = <span class="k">10</span>, <span class="k">3</span>
+
+<span class="k">def</span> filter_batch(articles):
+    <span class="s">"""논문 묶음을 GPT에 보내 [{pmid, relevant, reason}, ...] 반환"""</span>
+    lines = [<span class="s">f"PMID: {a['pmid']}\nTitle: {str(a['title'])[:200]}\n"</span>
+             <span class="s">f"Abstract: {str(a['abstract'])[:500]}"</span> <span class="k">for</span> a <span class="k">in</span> articles]
+    user_prompt = <span class="s">"\n\n---\n\n"</span>.join(lines)
+
+    <span class="k">for</span> attempt <span class="k">in</span> <span class="k">range</span>(MAX_RETRIES):
+        <span class="k">try</span>:
+            resp = client.chat.completions.create(
+                model=<span class="s">"gpt-4o-mini"</span>,           <span class="c"># 저비용 모델</span>
+                messages=[{<span class="s">"role"</span>: <span class="s">"system"</span>, <span class="s">"content"</span>: SYSTEM_PROMPT},
+                          {<span class="s">"role"</span>: <span class="s">"user"</span>,   <span class="s">"content"</span>: user_prompt}],
+                max_completion_tokens=<span class="k">2000</span>)
+            content = resp.choices[<span class="k">0</span>].message.content.strip()
+            content = content.replace(<span class="s">"```json"</span>, <span class="s">""</span>).replace(<span class="s">"```"</span>, <span class="s">""</span>).strip()
+            <span class="k">return</span> json.loads(content)
+        <span class="k">except</span> Exception <span class="k">as</span> e:
+            <span class="k">if</span> attempt &lt; MAX_RETRIES - <span class="k">1</span>:
+                time.sleep(<span class="k">2</span> + attempt * <span class="k">2</span>)
+            <span class="k">else</span>:   <span class="c"># 끝내 실패 → 보수적으로 모두 관련 처리</span>
+                <span class="k">return</span> [{<span class="s">"pmid"</span>: a[<span class="s">"pmid"</span>], <span class="s">"relevant"</span>: <span class="k">True</span>,
+                         <span class="s">"reason"</span>: <span class="s">"filter_failed"</span>} <span class="k">for</span> a <span class="k">in</span> articles]</pre>
+  </div>
+
+  <h2>5. 실행 — step1 CSV를 읽어 판정하고 step2 CSV로 저장</h2>
+  <p>1장이 만든 CSV를 불러와, 묶음마다 판정하고, 결과 컬럼(<code class="inl">relevant</code>·<code class="inl">reason</code>)을 붙여 저장합니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · run filtering (CSV)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">import</span> pandas <span class="k">as</span> pd
+<span class="k">from</span> tqdm <span class="k">import</span> tqdm
+
+IN  = <span class="s">f"{PROJECT_DIR}/step1_pubmed_abstracts.csv"</span>
+OUT = <span class="s">f"{PROJECT_DIR}/step2_filtered.csv"</span>
+
+df = pd.read_csv(IN)
+records = df.to_dict(<span class="s">"records"</span>)
+results = {}
+
+<span class="k">for</span> i <span class="k">in</span> tqdm(<span class="k">range</span>(<span class="k">0</span>, <span class="k">len</span>(records), BATCH_SIZE), desc=<span class="s">"Filtering"</span>):
+    <span class="k">for</span> r <span class="k">in</span> filter_batch(records[i:i+BATCH_SIZE]):
+        results[<span class="k">str</span>(r[<span class="s">"pmid"</span>])] = (<span class="k">int</span>(<span class="k">bool</span>(r.get(<span class="s">"relevant"</span>))), <span class="k">str</span>(r.get(<span class="s">"reason"</span>, <span class="s">""</span>))[:<span class="k">300</span>])
+    time.sleep(<span class="k">0.5</span>)   <span class="c"># rate limit 예절</span>
+
+df[<span class="s">"relevant"</span>] = df[<span class="s">"pmid"</span>].astype(<span class="k">str</span>).map(<span class="k">lambda</span> p: results.get(p, (<span class="k">1</span>, <span class="s">""</span>))[<span class="k">0</span>])
+df[<span class="s">"reason"</span>]   = df[<span class="s">"pmid"</span>].astype(<span class="k">str</span>).map(<span class="k">lambda</span> p: results.get(p, (<span class="k">1</span>, <span class="s">""</span>))[<span class="k">1</span>])
+df.to_csv(OUT, index=<span class="k">False</span>, encoding=<span class="s">"utf-8-sig"</span>)
+
+n_rel = <span class="k">int</span>(df[<span class="s">"relevant"</span>].sum())
+<span class="k">print</span>(<span class="s">f"✅ 관련 {n_rel}편 / 제외 {len(df)-n_rel}편 → {OUT}"</span>)</pre>
+  </div>
+  <div class="output"><span class="label">예시 출력</span>Filtering: 100%|██████████| 213/213 [18:42&lt;00:00,  5.27s/it]
+✅ 관련 1,560편 / 제외 564편 → .../step2_filtered.csv</div>
+
+  <h2>6. 결과 점검 — 눈으로 확인하기</h2>
+  <p>비율과 몇 개 샘플의 판정 이유를 직접 보며 프롬프트가 잘 작동했는지 확인합니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">cell · sanity check</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">print</span>(df[<span class="s">"relevant"</span>].value_counts())
+<span class="k">print</span>(<span class="s">"\n--- 관련 샘플 ---"</span>)
+<span class="k">for</span> _, r <span class="k">in</span> df[df.relevant==<span class="k">1</span>].head(<span class="k">3</span>).iterrows():
+    <span class="k">print</span>(<span class="s">f"[{r.pmid}] {str(r.title)[:70]}\n  → {r.reason}"</span>)
+<span class="k">print</span>(<span class="s">"\n--- 제외 샘플 ---"</span>)
+<span class="k">for</span> _, r <span class="k">in</span> df[df.relevant==<span class="k">0</span>].head(<span class="k">3</span>).iterrows():
+    <span class="k">print</span>(<span class="s">f"[{r.pmid}] {str(r.title)[:70]}\n  → {r.reason}"</span>)</pre>
+  </div>
+
+  <h2>한 단계 더 — 규모를 키우려면 DB</h2>
+  <p>
+    원본 프로젝트는 CSV 대신 <strong>MySQL</strong>(<code class="inl">mab_pubmed_filtered</code> 테이블)에 저장합니다.
+    수만 편을 여러 사람이 ‘이어하기’ 할 때 유리하죠. 핵심은 똑같습니다 — 입력 테이블을 읽고, 판정하고,
+    이미 처리한 PMID는 건너뜁니다. 무료로 연습하려면 DB 대신 <strong>SQLite</strong>(파일 한 개)를 써도 됩니다(부록 F).
+  </p>
+  <div class="callout warn">
+    <span class="t">접속정보는 코드에 적지 않기</span>
+    DB를 쓸 때 주소·아이디·비밀번호는 <strong>Colab Secret/환경변수</strong>로 불러옵니다.
+    공개 저장소에 올라간 평문 비밀번호는 사고의 단골 원인입니다.
+  </div>
+  <div class="callout note">
+    <span class="t">비용 감각</span>
+    <code class="inl">gpt-4o-mini</code> + 10편 배치면 ~2,000편을 매우 저렴하게 처리합니다.
+    더 정확히 하고 싶을 때만 상위 모델로 바꾸면 됩니다.
+  </div>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li>관련/비관련 <strong>기준을 글로 정의</strong>하고, 그대로 시스템 프롬프트로 옮겼습니다.</li>
+    <li><strong>10편 배치 + 재시도</strong>로 싸고 안정적으로 판정했습니다.</li>
+    <li><code class="inl">step2_filtered.csv</code>(relevant·reason 포함)를 얻었습니다.</li>
+  </ul>
+  <p>이제 진짜 핵심으로 갑니다. 3장에서 <code class="inl">relevant=1</code> 논문들로부터 <strong>인과관계(cause→effect)</strong>를 캐냅니다.</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch1.html"><span class="dir">← 이전 장</span><span class="ti">1장 · PubMed 수집</span></a>
+    <a class="next" href="ch3.html"><span class="dir">다음 장 →</span><span class="ti">3장 · 인과관계 추출</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

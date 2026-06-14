@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>4장. 그림 그리기 + 시각화 앱 (Vercel)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">4장 · 시각화 앱</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 4</span>
+    <h1>그림 그리기 + 시각화 앱 (Vercel)</h1>
+    <p class="lead">3장의 엣지 CSV를 <strong>인터랙티브 네트워크</strong>로 띄우고, 내 GitHub → Vercel로 세상에 공개합니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <code class="inl">https://&lt;프로젝트&gt;.vercel.app</code> — 노드를 끌고 필터를 움직이며 탐색하는,
+    <strong>내 계정으로 배포한</strong> 살아있는 인과 네트워크 사이트.
+  </div>
+
+  <h2>0. 작업 흐름 — 클론 → 내 GitHub 업로드 → 배포</h2>
+  <p>원본 시각화 저장소를 <strong>내 PC로 클론</strong>한 뒤, <strong>내 GitHub의 새 repo</strong>로 올리고, 그 repo를 Vercel에 연결합니다.
+     (남의 repo는 클론만으로 배포할 수 없습니다 — 내 소유여야 합니다.)</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell · 가져오기</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="c"># 1) 원본을 로컬로 클론</span>
+git clone https://github.com/STARG-LEE/mab-causal-network2.git
+cd mab-causal-network2
+
+<span class="c"># 2) 원본 git 기록 제거 → 내 프로젝트로 새 출발</span>
+Remove-Item -Recurse -Force .git
+git init ; git add . ; git commit -m <span class="s">"initial: 내 프로젝트로 가져옴"</span>
+
+<span class="c"># 3) 내 GitHub에 새 repo 만들고 업로드 (gh CLI)</span>
+gh repo create mab-causal-network2 --public --source=. --push
+<span class="c">#   gh가 없으면: 웹에서 빈 repo 생성 후</span>
+<span class="c">#   git remote add origin https://github.com/&lt;내아이디&gt;/mab-causal-network2.git</span>
+<span class="c">#   git branch -M main ; git push -u origin main</span></pre>
+  </div>
+  <div class="callout warn">
+    <span class="t">⚠ 업로드 전 비밀값 청소 (정적 사이트라도 습관화)</span>
+    혹시 코드에 API 키·접속정보가 없는지 먼저 훑습니다.
+    <div class="code" style="margin-top:10px">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">scan</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>git grep -nE <span class="s">"106\.247|user2|password|sk-"</span>   <span class="c"># 잡히면 모두 제거 후 업로드</span></pre>
+    </div>
+  </div>
+
+  <h2>1. 읽는 법 — 색과 크기의 약속</h2>
+  <ul>
+    <li><strong>노드 크기</strong> = 등장 빈도, <strong>화살표 두께</strong> = 관계 빈도(num_papers)</li>
+    <li>화살표 색: <span class="chip pos">녹색 안정화</span> <span class="chip neg">빨강 불안정화</span> <span class="chip neu">회색 중립</span></li>
+    <li>노드 색 = 6개 카테고리(sequence/structure/formulation/stress/stability/quality_outcome)</li>
+  </ul>
+
+  <h2>2. 내 데이터로 교체하기</h2>
+  <p>
+    원본 repo에는 예시 엣지 CSV가 들어 있습니다. 이걸 <strong>3장에서 내가 만든</strong>
+    <code class="inl">step3_edges.csv</code>로 바꾸면 “내 그래프”가 됩니다. 파일을 repo 루트에 넣고,
+    <code class="inl">index.html</code>이 읽는 파일명·컬럼명만 맞춰주면 끝입니다.
+  </p>
+  <div class="callout note"><span class="t">컬럼 약속</span>
+    <code class="inl">cause, effect, relationship, frequency, num_papers, sample_evidence</code>
+    — 3장 출력과 동일합니다. (카테고리 색을 쓰려면 <code class="inl">category_cause, category_effect</code>도 함께)</div>
+
+  <h2>3. 핵심 코드 — 엣지 CSV로 네트워크 그리기</h2>
+  <p>가벼운 <strong>vis-network</strong>와 <strong>PapaParse</strong>(CSV 파서)를 CDN으로 불러와, 브라우저에서 바로 그립니다. 서버가 필요 없습니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">index.html (발췌)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">&lt;script</span> src=<span class="s">"https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"</span><span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;script</span> src=<span class="s">"https://unpkg.com/papaparse@5/papaparse.min.js"</span><span class="k">&gt;&lt;/script&gt;</span>
+<span class="k">&lt;div</span> id=<span class="s">"net"</span> style=<span class="s">"height:80vh"</span><span class="k">&gt;&lt;/div&gt;</span>
+<span class="k">&lt;script&gt;</span>
+<span class="c">// 관계유형 → 극성 색</span>
+<span class="k">const</span> POS = [<span class="s">"stabilizes"</span>,<span class="s">"inhibits"</span>,<span class="s">"prevents"</span>,<span class="s">"decreases"</span>,<span class="s">"shields"</span>];
+<span class="k">const</span> NEG = [<span class="s">"destabilizes"</span>,<span class="s">"promotes"</span>,<span class="s">"increases"</span>,<span class="s">"induces"</span>,<span class="s">"aggregates"</span>,
+             <span class="s">"oxidizes"</span>,<span class="s">"deamidates"</span>,<span class="s">"fragments"</span>,<span class="s">"unfolds"</span>,<span class="s">"degrades"</span>];
+<span class="k">const</span> color = r =&gt; POS.includes(r) ? <span class="s">"#2e9e6b"</span> : NEG.includes(r) ? <span class="s">"#d65a4e"</span> : <span class="s">"#9aa7b0"</span>;
+
+<span class="c">// 필터 기준 (UI 슬라이더와 연결)</span>
+<span class="k">let</span> MIN_FREQ = <span class="k">3</span>, MIN_PAPERS = <span class="k">3</span>;
+
+Papa.parse(<span class="s">"step3_edges.csv"</span>, { download:<span class="k">true</span>, header:<span class="k">true</span>, complete: res =&gt; {
+  <span class="k">const</span> nodes = {}, edges = [];
+  res.data.forEach(e =&gt; {
+    <span class="k">if</span> (!e.cause || !e.effect) <span class="k">return</span>;
+    <span class="k">if</span> (+e.frequency &lt; MIN_FREQ || +e.num_papers &lt; MIN_PAPERS) <span class="k">return</span>;
+    [e.cause, e.effect].forEach(n =&gt; {
+      <span class="k">if</span> (!nodes[n]) nodes[n] = { id:n, label:n, value:<span class="k">1</span> };
+      <span class="k">else</span> nodes[n].value++;
+    });
+    edges.push({ from:e.cause, to:e.effect, value:+e.num_papers,
+                 color:color(e.relationship), title:e.relationship+<span class="s">": "</span>+e.sample_evidence,
+                 arrows:<span class="s">"to"</span> });
+  });
+  <span class="k">new</span> vis.Network(net, { nodes:Object.values(nodes), edges },
+    { physics:{ stabilization:<span class="k">true</span> }, nodes:{ shape:<span class="s">"dot"</span>, scaling:{ min:<span class="k">6</span>, max:<span class="k">40</span> } } });
+}});
+<span class="k">&lt;/script&gt;</span></pre>
+  </div>
+  <div class="callout tip"><span class="t">호버하면 근거가 뜬다</span>
+    엣지의 <code class="inl">title</code>에 3장에서 저장한 <code class="inl">sample_evidence</code>를 넣었습니다.
+    화살표에 마우스를 올리면 “이 관계가 어느 문장에서 나왔는지”가 바로 보입니다.</div>
+
+  <h2>4. 필터 UI — 복잡도 조절</h2>
+  <p>3.3만 엣지를 다 그리면 ‘털뭉치’가 됩니다. 최소 빈도·최소 논문수 슬라이더로 굵은 줄거리만 남깁니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">index.html · 필터</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>최소 빈도 <span class="k">&lt;input</span> type=<span class="s">"range"</span> min=<span class="s">"1"</span> max=<span class="s">"20"</span> value=<span class="s">"3"</span>
+  oninput=<span class="s">"MIN_FREQ=+this.value; redraw()"</span><span class="k">&gt;</span>
+최소 논문수 <span class="k">&lt;input</span> type=<span class="s">"range"</span> min=<span class="s">"1"</span> max=<span class="s">"20"</span> value=<span class="s">"3"</span>
+  oninput=<span class="s">"MIN_PAPERS=+this.value; redraw()"</span><span class="k">&gt;</span>
+<span class="c">// redraw(): 위 Papa.parse 블록을 함수로 묶어 다시 호출</span></pre>
+  </div>
+  <div class="callout note"><span class="t">대응 자료 · 기술 선택</span>
+    이 그림책은 배우기 쉬운 <strong>vis-network</strong>로 그리지만, 실제 연구 사이트는
+    <strong>D3.js force-directed</strong>로 구현돼 있습니다(원리는 동일 — 노드 간 인력·척력 시뮬레이션).
+    완성형 참고: <a href="https://sdkparkforbi.github.io/mab-causal-network/">sdkparkforbi.github.io/mab-causal-network</a>,
+    <a href="https://starg-lee.github.io/mab-causal-network-v2/">mab-causal-network-v2</a>. 막히면 원본 <code class="inl">index.html</code>과 비교해 보세요.</div>
+
+  <h2>5. Vercel로 배포</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>로그인</h4><p><a href="https://vercel.com">vercel.com</a>에 내 GitHub로 로그인.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Import</h4><p><strong>Add New ▸ Project ▸ Import</strong>에서 내 <code class="inl">mab-causal-network2</code> 선택.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>설정</h4><p>Framework = <strong>Other</strong>, Root = <code class="inl">index.html</code>이 있는 폴더.</p></div></div>
+    <div class="step"><div class="n alt">4</div><div><h4>Deploy</h4><p><code class="inl">.vercel.app</code> URL 발급. 이후 <code class="inl">git push</code>만 하면 자동 재배포.</p></div></div>
+  </div>
+  <div class="callout tip"><span class="t">데이터를 바꾸면?</span>
+    <code class="inl">step3_edges.csv</code>를 새로 덮어쓰고 <code class="inl">git push</code> → 몇 초 뒤 사이트가 새 그래프로 갱신됩니다.
+    (GitHub Pages로 올리려면 부록 C 참고)</div>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li>원본을 <strong>클론 → 내 GitHub repo로 업로드</strong>하는 흐름을 익혔습니다.</li>
+    <li>엣지 CSV를 <strong>vis-network</strong>로 그리고, 필터로 복잡도를 조절했습니다.</li>
+    <li><strong>Vercel</strong>로 내 계정에서 사이트를 공개했습니다.</li>
+  </ul>
+  <p>그래프를 ‘보는’ 앱은 만들었습니다. 5장에서는 그 내용이 ‘맞는지’ <strong>검증하는</strong> 앱을 Streamlit으로 만듭니다.</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch3.html"><span class="dir">← 이전 장</span><span class="ti">3장 · 인과관계 추출</span></a>
+    <a class="next" href="ch5.html"><span class="dir">다음 장 →</span><span class="ti">5장 · 검증 앱 (Streamlit)</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>

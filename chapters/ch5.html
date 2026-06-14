@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>5장. 검증 앱 만들기 (Streamlit)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">5장 · 검증 앱</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 5</span>
+    <h1>검증 앱 만들기 (Streamlit)</h1>
+    <p class="lead">AI가 뽑은 인과관계가 정말 타당한지, <strong>사람이 검수</strong>하는 웹앱을 만들고 Streamlit Cloud로 공개합니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    <code class="inl">https://&lt;앱이름&gt;.streamlit.app</code> — 리뷰어가 샘플별로
+    <strong>‘적절/부적절’ + 의견</strong>을 남기고, 그 결과로 <strong>모델 신뢰성을 수치화</strong>하는 앱.
+  </div>
+
+  <h2>0. 작업 흐름 — 클론 → 내 GitHub 업로드 → 배포</h2>
+  <p>4장과 동일한 패턴입니다. 원본 검증 앱을 클론해 내 repo로 올리고, Streamlit Cloud에 연결합니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">PowerShell · 가져오기</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>git clone https://github.com/STARG-LEE/mab-review-app.git
+cd mab-review-app
+Remove-Item -Recurse -Force .git
+git init ; git add . ; git commit -m <span class="s">"initial: 내 프로젝트로 가져옴"</span>
+gh repo create mab-review-app --public --source=. --push</pre>
+  </div>
+
+  <div class="callout warn">
+    <span class="t">⚠ 이 장에서 가장 중요 — 비밀값 청소</span>
+    이 앱은 <strong>DB와 OpenAI 키</strong>에 접속합니다. 원본에는 접속정보가 코드에 평문으로 박혀 있을 수 있습니다.
+    <strong>공개 repo에 그대로 올리면 비밀번호가 전 세계에 노출됩니다.</strong> 업로드 전에 반드시 점검하세요.
+    <div class="code" style="margin-top:10px">
+      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">scan & scrub</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>git grep -nE <span class="s">"106\.247|user2|password|sk-|DB_PASS"</span>   <span class="c"># 잡히는 모든 줄을</span>
+<span class="c"># → st.secrets[...] 또는 환경변수로 바꾸고, 실제 값은 Streamlit Secrets 화면에 입력</span></pre>
+    </div>
+  </div>
+
+  <h2>1. 왜 검증인가 — 휴먼 인 더 루프</h2>
+  <p>
+    GPT가 뽑은 인과관계에는 오류가 섞일 수 있습니다. 모델을 믿기 전에 <strong>표본을 사람이 확인</strong>해
+    품질을 수치로 증명해야 합니다. 이 “적절율(%)”은 8장 논문에서 <strong>신뢰성의 근거</strong>가 됩니다.
+  </p>
+  <section class="hero-art" aria-label="휴먼 인 더 루프">
+    <svg viewBox="0 0 820 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GPT 해석을 사람이 적절/부적절로 검수">
+      <g transform="translate(30,35)">
+        <rect x="0" y="10" width="190" height="80" rx="12" fill="#eaf3f4" stroke="#2f7d8c" stroke-width="2"/>
+        <text x="95" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#2f7d8c">GPT 해석 (샘플 300)</text>
+        <text x="95" y="62" text-anchor="middle" font-size="11" fill="#51626d">“A가 B를 촉진한다 …”</text>
+      </g>
+      <g transform="translate(240,75)"><line x1="0" y1="0" x2="50" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M50,-7 L66,0 L50,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(320,30)">
+        <text x="95" y="14" text-anchor="middle" font-size="20">🧑‍🔬</text>
+        <rect x="0" y="24" width="190" height="70" rx="12" fill="#fff" stroke="#9aa7b0" stroke-width="2"/>
+        <text x="95" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#51626d">리뷰어 판정</text>
+        <text x="95" y="74" text-anchor="middle" font-size="11" fill="#51626d">적절 / 부적절 + 의견</text>
+      </g>
+      <g transform="translate(530,75)"><line x1="0" y1="0" x2="50" y2="0" stroke="#9aa7b0" stroke-width="3"/><path d="M50,-7 L66,0 L50,7 Z" fill="#9aa7b0"/></g>
+      <g transform="translate(610,35)">
+        <rect x="0" y="10" width="180" height="80" rx="12" fill="#fff2e0" stroke="#e9913f" stroke-width="2"/>
+        <text x="90" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#c9742a">적절율 %</text>
+        <text x="90" y="62" text-anchor="middle" font-size="11" fill="#51626d">신뢰성의 정량 근거</text>
+      </g>
+    </svg>
+  </section>
+
+  <h2>2. 앱 구조</h2>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">mab-review-app/</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>mab-review-app/
+├── app.py              <span class="c"># Streamlit 앱 본체</span>
+├── requirements.txt    <span class="c"># streamlit, pandas, (pymysql/openai)</span>
+└── .streamlit/
+    └── secrets.toml    <span class="c"># ⚠ .gitignore로 제외! 실제 값은 클라우드 Secrets에</span></pre>
+  </div>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">.gitignore</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>.streamlit/secrets.toml</pre>
+  </div>
+
+  <h2>3. 핵심 코드 — 리뷰 화면</h2>
+  <p>
+    샘플을 불러와 한 건씩 보여주고, 리뷰어가 <strong>적절/부적절 + 의견</strong>을 남기면 저장합니다.
+    비밀값은 코드에 적지 않고 <code class="inl">st.secrets</code>로 읽습니다.
+  </p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">app.py (발췌)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre><span class="k">import</span> streamlit <span class="k">as</span> st
+<span class="k">import</span> pandas <span class="k">as</span> pd
+
+st.title(<span class="s">"🧪 mAb 인과관계 검증"</span>)
+
+<span class="c"># 비밀값은 Secrets에서 (코드/repo에 절대 평문 금지)</span>
+<span class="c"># DB_URL = st.secrets["DB_URL"]   # 예: mysql+pymysql://...</span>
+
+<span class="c"># 검증 샘플 로드 (DB 또는 CSV)</span>
+@st.cache_data
+<span class="k">def</span> load_samples():
+    <span class="k">return</span> pd.read_csv(<span class="s">"review_samples.csv"</span>)   <span class="c"># 무료 경로: CSV 300건</span>
+
+df = load_samples()
+name = st.text_input(<span class="s">"리뷰어 이름"</span>)
+sub  = st.selectbox(<span class="s">"하위범주"</span>, [<span class="s">"전체"</span>, <span class="s">"physical"</span>, <span class="s">"chemical"</span>, <span class="s">"biological"</span>])
+view = df <span class="k">if</span> sub == <span class="s">"전체"</span> <span class="k">else</span> df[df.subcat == sub]
+
+i = st.number_input(<span class="s">"샘플 번호"</span>, <span class="k">0</span>, <span class="k">len</span>(view)-<span class="k">1</span>, <span class="k">0</span>)
+row = view.iloc[<span class="k">int</span>(i)]
+
+st.markdown(<span class="s">f"**그래프:** {row.cause} → {row.effect}  ({row.relationship})"</span>)
+st.info(<span class="s">f"GPT 해석: {row.interpretation}"</span>)
+
+verdict  = st.radio(<span class="s">"이 해석이 타당한가요?"</span>, [<span class="s">"적절"</span>, <span class="s">"부적절"</span>], horizontal=<span class="k">True</span>)
+feedback = st.text_area(<span class="s">"의견 (선택)"</span>)
+
+<span class="k">if</span> st.button(<span class="s">"저장"</span>) <span class="k">and</span> name:
+    rec = pd.DataFrame([{<span class="s">"reviewer"</span>:name, <span class="s">"sample_id"</span>:row.id,
+                         <span class="s">"verdict"</span>:verdict, <span class="s">"feedback"</span>:feedback}])
+    rec.to_csv(<span class="s">"reviews.csv"</span>, mode=<span class="s">"a"</span>, header=<span class="k">False</span>, index=<span class="k">False</span>)
+    st.success(<span class="s">"저장되었습니다 ✓"</span>)</pre>
+  </div>
+  <div class="callout note"><span class="t">DB로 확장</span>
+    여러 리뷰어가 동시에 쓰려면 CSV 대신 DB(MySQL)에 저장합니다. 접속 문자열은
+    <code class="inl">st.secrets["DB_URL"]</code>로 읽고, 실제 값은 Streamlit Secrets 화면에만 둡니다.</div>
+
+  <h2>4. Streamlit Cloud로 배포</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>New app</h4><p><a href="https://share.streamlit.io">share.streamlit.io</a> → 내 GitHub 로그인 → <strong>New app</strong>.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>지정</h4><p>내 <code class="inl">mab-review-app</code> repo / branch / <code class="inl">app.py</code> 선택.</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>Secrets 입력</h4><p><strong>App settings ▸ Secrets</strong>에 키·DB 접속정보를 TOML로 붙여넣기 (repo엔 없음).</p></div></div>
+    <div class="step"><div class="n alt">4</div><div><h4>Deploy</h4><p><code class="inl">.streamlit.app</code> URL 발급. push마다 자동 재배포.</p></div></div>
+  </div>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">Streamlit Secrets (대시보드 입력)</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>OPENAI_API_KEY = <span class="s">"sk-..."</span>
+DB_URL = <span class="s">"mysql+pymysql://user:pass@host:3306/db"</span></pre>
+  </div>
+
+  <h2>5. 결과 집계 — 적절율 구하기</h2>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">집계</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>r = pd.read_csv(<span class="s">"reviews.csv"</span>, names=[<span class="s">"reviewer"</span>,<span class="s">"sample_id"</span>,<span class="s">"verdict"</span>,<span class="s">"feedback"</span>])
+rate = (r.verdict == <span class="s">"적절"</span>).mean()
+<span class="k">print</span>(<span class="s">f"적절율: {rate:.1%}  (n={len(r)})"</span>)   <span class="c"># 예) 적절율: 86.0% (n=300)</span></pre>
+  </div>
+  <div class="callout tip"><span class="t">이 숫자가 논문이 된다</span>
+    “리뷰어 검증 결과 적절율 86%” 같은 한 줄이 8장 Results의 신뢰성 절을 채웁니다.
+    부적절로 표시된 사례의 의견은 프롬프트 개선(3장)으로 되먹임할 수 있습니다.</div>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li>원본 검증 앱을 <strong>클론 → 비밀값 청소 → 내 repo 업로드</strong>했습니다.</li>
+    <li><code class="inl">st.secrets</code>로 키를 안전하게 다루는 Streamlit 앱을 만들었습니다.</li>
+    <li><strong>Streamlit Cloud</strong>로 공개하고, <strong>적절율</strong>로 모델 신뢰성을 수치화했습니다.</li>
+  </ul>
+  <p>데이터·시각화·검증이 모두 갖춰졌습니다. 6장에서 드디어 이 그래프로 <strong>예측 모델 mAb-GATED</strong>를 학습시킵니다.</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch4.html"><span class="dir">← 이전 장</span><span class="ti">4장 · 시각화 앱</span></a>
+    <a class="next" href="ch6.html"><span class="dir">다음 장 →</span><span class="ti">6장 · mAb-GATED</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>
