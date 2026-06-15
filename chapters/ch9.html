@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>9장. 발표 영상 만들기 — HeyGen</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../assets/style.css" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="AI로 항체 안정성 지식그래프 만들기" />
+<meta property="og:description" content="PubMed 초록 수집부터 인과추출·시각화·예측·가설·논문까지 따라 하는 그림책 자습서" />
+<meta property="og:image" content="https://mab-causal-guidebook.vercel.app/og.png" />
+<meta property="og:url" content="https://mab-causal-guidebook.vercel.app/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://mab-causal-guidebook.vercel.app/og.png" />
+</head>
+<body>
+<div id="progress"></div>
+<div class="topbar"><div class="wrap">
+  <a class="home" href="../index.html">🏠 그림책 목차</a><span class="spacer"></span>
+  <span class="crumb">9장 · 발표 영상</span>
+</div></div>
+
+<div class="page"><div class="wrap">
+  <div class="chapter-head">
+    <span class="badge">CHAPTER 9</span>
+    <h1>발표 영상 만들기 — HeyGen</h1>
+    <p class="lead">논문까지 썼다면, 이제 <strong>2분 AI 아바타 영상</strong>으로 학술대회·SNS에 발표합니다.</p>
+  </div>
+
+  <div class="callout colab">
+    <span class="t">이 장의 결과물</span>
+    AI 아바타가 말하는 <strong>2분 발표 영상</strong> — 말에 맞춰 슬라이드 배경이 바뀌고, 아바타는 오른쪽 아래에.
+  </div>
+
+  <h2>1. HeyGen이란?</h2>
+  <p><a href="https://www.heygen.com">HeyGen</a>은 대본(스크립트)을 넣으면 <strong>AI 아바타가 그대로 말하는 영상</strong>을 만들어 주는 도구입니다.
+     장면(Scene)마다 <strong>배경 이미지 + 대본</strong>을 넣으면, 말에 맞춰 배경이 바뀝니다.</p>
+
+  <h2>2. 2분 발표문 (단위는 TTS가 정확히 읽도록)</h2>
+  <p>구조: 주제 → 중요성 → 기존 한계 → 우리 방법 → 성과 → 의의. 6문단이 슬라이드 6장과 1:1 대응합니다.</p>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">speech.txt — HeyGen 스크립트</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>Good morning. I'd like to share our work on a costly bottleneck in antibody drug
+development — converting monoclonal antibodies from intravenous to subcutaneous administration.
+
+Subcutaneous dosing lets patients self-inject at home. But it demands very high concentrations —
+at least 120 milligrams per milliliter, in under 2 milliliters. At these concentrations, physical
+degradation, such as aggregation and rising viscosity, takes over, and finding the right
+formulation can take months of trial and error.
+
+Data-driven models have helped, but most are molecule-specific, or limited to narrow experimental
+databases. As a result, knowledge rarely transfers from one antibody to another.
+
+We take a different path: an integrated decision-support tool with three parts. First, we mined
+62,281 PubMed abstracts with a generative AI filter, kept 5,576 relevant papers, and built a
+mechanistic knowledge graph of 32,939 directed edges over 8,670 nodes. Second, we trained
+mAb-GATED, a 3.2 million-parameter graph-attention transformer, initialized with PubMed-BERT
+embeddings. Third, an expert-review interface lets domain scientists validate the model's explanations.
+
+On a held-out test set of 1,231 cases, mAb-GATED reached Hits at one of 84.7 percent, and a mean
+reciprocal rank of 0.884 — far above frequency and DistMult baselines. Chemical-stability prediction
+was nearly perfect, at 99.0 percent, and physical stability — the main barrier to subcutaneous
+conversion — reached 87.9 percent.
+
+This shows that decades of scattered literature can become a learnable, reusable knowledge layer —
+one that ranks degradation risks before a single bench experiment. Next, we will add antibody
+sequence and structure, and validate against approved conversions, such as belimumab. Thank you.</pre>
+  </div>
+  <div class="callout tip">
+    <span class="t">단위·약어 발음</span>
+    <code class="inl">mg/mL</code> → “milligrams per milliliter”, <code class="inl">Hits@1</code> → “Hits at one”,
+    <code class="inl">MRR</code> → “mean reciprocal rank”처럼 <strong>풀어서</strong> 적어야 음성이 정확히 읽습니다.
+    <code class="inl">mAb-GATED</code>가 어색하면 “mab gated”, <code class="inl">PubMed-BERT</code>는 “pub-med bert”로.
+  </div>
+
+  <h2>3. 배경 자료 — 말에 맞춰 바뀌는 6장</h2>
+  <p>장면마다 다른 배경을 깔면 “스피치할 때마다 그림이 바뀌는” 효과가 납니다. <strong>오른쪽 아래는 아바타 자리</strong>라 비워 두었습니다.</p>
+  <section class="hero-art" aria-label="HeyGen 장면 구성">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="슬라이드 배경 + 오른쪽 아래 아바타">
+      <rect x="60" y="30" width="700" height="240" rx="14" fill="#fffdf8" stroke="#2f7d8c" stroke-width="3"/>
+      <rect x="60" y="30" width="700" height="14" rx="6" fill="#2f7d8c"/>
+      <text x="92" y="92" font-size="22" font-weight="700" fill="#1f5b67">슬라이드 배경 (1920×1080)</text>
+      <text x="92" y="128" font-size="15" fill="#51626d">제목 · 핵심 문장 · 숫자 …</text>
+      <rect x="92" y="150" width="220" height="16" rx="8" fill="#e9913f"/>
+      <rect x="92" y="176" width="300" height="14" rx="7" fill="#e8e0d2"/>
+      <rect x="92" y="198" width="260" height="14" rx="7" fill="#e8e0d2"/>
+      <circle cx="680" cy="205" r="55" fill="#cfe0e3" stroke="#2f7d8c" stroke-width="3"/>
+      <text x="680" y="210" text-anchor="middle" font-size="14" fill="#1f5b67">아바타</text>
+      <text x="680" y="278" text-anchor="middle" font-size="13" fill="#d65a4e">← 이 영역은 비움</text>
+    </svg>
+  </section>
+  <p>이 프로젝트의 배경 6장은 <code class="inl">heygen_backgrounds/slide_1_title.png … slide_6_significance.png</code>로,
+     포스터 전체는 <code class="inl">poster_mab_gated.png</code>로 생성해 두었습니다.</p>
+  <div class="card" style="text-align:center">
+    <img src="../assets/poster.png" alt="mAb-GATED 포스터" style="max-width:100%;border:1px solid var(--line);border-radius:10px"/>
+    <p style="font-size:13px;color:var(--ink-soft);margin:10px 0 0">포스터 한 장 버전 — 공유·인쇄용 (배경으로 정적 사용도 가능)</p>
+  </div>
+
+  <h2>4. HeyGen에서 만드는 법 (단계별)</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>아바타·음성 고르기</h4><p>HeyGen에서 아바타(또는 내 사진으로 만든 아바타)와 <strong>영어 음성</strong>을 선택합니다.</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>장면 6개 만들기</h4><p>‘Add Scene’으로 장면을 6개 만듭니다(슬라이드 1장 = 장면 1개).</p></div></div>
+    <div class="step"><div class="n">3</div><div><h4>배경 넣기</h4><p>각 장면에서 <strong>Add Media → Upload</strong>로 <code class="inl">slide_1.png … slide_6.png</code>를 배경으로 올립니다(꽉 차게).</p></div></div>
+    <div class="step"><div class="n">4</div><div><h4>아바타 위치</h4><p>아바타를 <strong>오른쪽 아래</strong> 원형으로 배치(슬라이드 빈 영역과 겹치지 않게).</p></div></div>
+    <div class="step"><div class="n">5</div><div><h4>대본 붙여넣기</h4><p>각 장면의 스크립트 칸에 <strong>해당 문단 하나씩</strong> 붙여넣습니다 → 말에 맞춰 슬라이드가 바뀝니다.</p></div></div>
+    <div class="step"><div class="n alt">6</div><div><h4>생성(Submit)</h4><p>‘Submit/Generate’ → 잠시 뒤 2분 영상 완성. 다운로드해 공유.</p></div></div>
+  </div>
+  <div class="callout note">
+    <span class="t">배경은 ‘그림/미디어’만 됩니다</span>
+    HeyGen 배경에는 PPT가 아니라 <strong>이미지(PNG)·영상</strong>을 넣습니다. 그래서 슬라이드를 <strong>PNG로</strong> 준비했습니다.
+    (PowerPoint에서 직접 만들 땐 <em>파일 → 내보내기 → PNG, 모든 슬라이드</em>로 이미지를 뽑으면 됩니다.)
+  </div>
+
+  <h2>5. 시간 맞추기</h2>
+  <ul>
+    <li>약 <strong>295단어 ≈ 2분</strong>. 음성이 빠르면 조금 남고, 느리면 살짝 넘칠 수 있습니다.</li>
+    <li>2분을 넘기면 4번째 문단의 큰 숫자를 “more than sixty thousand”, “about five thousand”처럼 줄이세요.</li>
+    <li>장면당 한 문단 → 슬라이드 전환이 자연스럽게 말과 맞습니다.</li>
+  </ul>
+
+  <h2>오늘의 마무리</h2>
+  <ul>
+    <li>2분 영어 발표문(단위까지 또렷하게)을 준비했습니다.</li>
+    <li>말에 맞춰 바뀌는 <strong>배경 6장</strong>과 <strong>포스터 한 장</strong>을 만들었습니다.</li>
+    <li>HeyGen에서 <strong>장면=슬라이드</strong>로 영상을 완성하는 법을 익혔습니다.</li>
+  </ul>
+  <p>이제 데이터 수집부터 <strong>발표 영상</strong>까지, 연구의 전 과정을 직접 만들어 세상에 공유할 수 있습니다. 🎬</p>
+
+  <nav class="pager">
+    <a class="prev" href="ch8.html"><span class="dir">← 이전 장</span><span class="ti">8장 · 논문 쓰기</span></a>
+    <a class="next" href="appendix.html"><span class="dir">다음 →</span><span class="ti">부록 · 배포·키·트러블슈팅</span></a>
+  </nav>
+</div></div>
+<footer class="foot">© 2026 GenAIBiC · mAb 인과 네트워크 그림책</footer>
+<script src="../assets/book.js"></script>
+</body>
+</html>
