@@ -1,3 +1,10 @@
+/* 인앱 브라우저 → 외부 브라우저 자동 전환 */
+(function(){try{var ua=(navigator.userAgent||'').toLowerCase(),href=location.href;
+if(sessionStorage.getItem('_esc'))return;
+if(ua.indexOf('kakaotalk')!==-1){sessionStorage.setItem('_esc','1');location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(href);return;}
+if(/(naver|line|fbav|fban|instagram|daumapps|everytimeapp|trill)/.test(ua)&&/android/i.test(ua)){sessionStorage.setItem('_esc','1');location.href='intent://'+href.replace(/^https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';}
+}catch(e){}})();
+
 /* =====================================================================
    mAb 인과 네트워크 그림책 — 공통 동작
    - 상단 읽기 진행 바
