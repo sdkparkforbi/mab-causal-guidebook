@@ -148,11 +148,36 @@
     <div class="step"><div class="n alt">3</div><div><h4>Deploy</h4><p>검증 <code class="inl">/</code> + 대시보드 <code class="inl">/dashboard.html</code> 발급. push마다 자동 재배포.</p></div></div>
   </div>
 
-  <h2>다른 길 — 초록이 말한 Streamlit 버전</h2>
-  <div class="callout note"><span class="t">동등한 HITL 구현</span>
-    정본 초록은 검토 인터페이스를 <strong>Streamlit</strong>으로 기술합니다(<a href="https://github.com/STARG-LEE/mab-review-app">mab-review-app</a>, DB 동일).
-    우리는 같은 기능(전문가 검토 → DB 저장)을 <strong>Vercel 서버리스</strong>로 구현해 모든 앱을 Vercel로 통일했습니다 — 둘은 동등한 HITL입니다.
-    (아마존 리뷰용 <code class="inl">review-validation</code>과는 무관)</div>
+  <h2>두 가지 검증 버전 — 간단형 & 정식형</h2>
+  <p>같은 목적(전문가 검토 → DB 저장)을 <strong>두 가지</strong>로 구현했습니다. 상황에 맞게 고르세요.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>버전 1 · 간단형 (이 장)</th><th>버전 2 · 정식형</th></tr></thead>
+    <tbody>
+      <tr><td>저장소</td><td><code class="inl">mab-causal-review</code></td><td><code class="inl">mab-review-app</code></td></tr>
+      <tr><td>기술</td><td>정적 + Vercel 서버리스 + MySQL</td><td><strong>Streamlit</strong> + MySQL</td></tr>
+      <tr><td>배포</td><td>Vercel(원클릭, 자동 재배포)</td><td>Streamlit Cloud</td></tr>
+      <tr><td>샘플</td><td>JSON(직접 구성)</td><td>DB <code class="inl">mab_review_samples</code> <strong>300개</strong>(GPT-5-mini 해석)</td></tr>
+      <tr><td>특징</td><td>가볍고 빠름, 정본 초록과 동등 HITL</td><td>정본 초록의 Streamlit 구조 그대로, 기능 풍부</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>버전 2 — Streamlit + DB (mab-review-app)</h3>
+  <div class="code">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="fn">구조</span><span class="spacer"></span><button class="copy">복사</button></div>
+<pre>mab-review-app/
+├── app.py                 <span class="c"># Streamlit UI (리뷰어)</span>
+├── requirements.txt
+└── .streamlit/secrets.toml <span class="c"># DB_URL (Cloud Secrets, repo엔 없음)</span>
+
+DB: mab_review_samples(300 샘플)  ·  mab_review_results(판정 저장)</pre>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><h4>내 repo로 가져오기</h4><p><code class="inl">STARG-LEE/mab-review-app</code> 클론 → 내 계정으로 push (이미 <code class="inl">sdkparkforbi/mab-review-app</code>에 준비됨).</p></div></div>
+    <div class="step"><div class="n">2</div><div><h4>Streamlit Cloud 연결</h4><p><a href="https://share.streamlit.io">share.streamlit.io</a> → New app → repo / <code class="inl">app.py</code> 선택.</p></div></div>
+    <div class="step"><div class="n alt">3</div><div><h4>Secrets 입력 → Deploy</h4><p>App settings ▸ Secrets에 <code class="inl">DB_URL = "mysql+pymysql://…@aiforalab.com:3306/abswitch?charset=utf8mb4"</code> 입력 → 공개 URL 발급.</p></div></div>
+  </div>
+  <div class="callout note"><span class="t">혼동 주의</span> 두 버전 모두 mAb 검증용입니다. 아마존 리뷰용 <code class="inl">review-validation</code>과는 무관합니다.</div>
 
   <h2>오늘의 마무리</h2>
   <ul>

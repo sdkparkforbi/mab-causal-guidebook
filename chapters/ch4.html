@@ -40,6 +40,13 @@
     <strong>내 계정으로 배포한</strong> 살아있는 인과 네트워크 사이트.
   </div>
 
+  <div class="callout note">
+    <span class="t">라이브 데이터 = GPT-5-mini (정본)</span>
+    실제 배포된 <a href="https://mab-causal-network.vercel.app">mab-causal-network.vercel.app</a>는
+    GPT-5-mini 파이프라인의 <strong>32,939 엣지 · 8,670 노드</strong>를 보여줍니다(이전 4o-mini 16,019 엣지에서 교체).
+    데이터는 GitHub raw의 <code class="inl">step2c_v4c_causal_edges_summary.csv</code>를 직접 읽으므로, 그 파일만 바꿔 push하면 갱신됩니다.
+  </div>
+
   <h2>0. 작업 흐름 — 클론 → 내 GitHub 업로드 → 배포</h2>
   <p>원본 시각화 저장소를 <strong>내 PC로 클론</strong>한 뒤, <strong>내 GitHub의 새 repo</strong>로 올리고, 그 repo를 Vercel에 연결합니다.
      (남의 repo는 클론만으로 배포할 수 없습니다 — 내 소유여야 합니다.)</p>
