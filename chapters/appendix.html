@@ -204,6 +204,12 @@ Streamlit + DB  → Streamlit Cloud (대안)  ← mab-review-app
     </tbody>
   </table></div>
 
+  <h2>I. 공유 UX — 인앱 브라우저 & 로딩 표시</h2>
+  <ul>
+    <li><strong>카카오/네이버 인앱 브라우저 탈출</strong> — 페이지 로드 시 User-Agent를 감지해, 카카오면 <code class="inl">kakaotalk://web/openExternal</code>로 <strong>외부 기본 브라우저(Chrome 등)</strong>에서 다시 열리게 합니다(안드로이드 기타 인앱은 <code class="inl">intent://…package=com.android.chrome</code>). 매번 인앱 뷰어의 확인 절차를 거치는 불편을 없앱니다. 모든 앱의 <code class="inl">&lt;head&gt;</code>(그림책은 <code class="inl">book.js</code>) 맨 앞에 들어 있습니다.</li>
+    <li><strong>라이브 아바타 로딩 카운트다운</strong> — 세션·아바타 스트리밍 준비 동안 <strong>예상 남은 시간(~18초)과 진행 바</strong>를 보여줘 대기 체감을 줄입니다(<code class="inl">mab-live-avatar</code>).</li>
+  </ul>
+
   <div class="callout warn">
     <span class="t">보안 한 줄 요약</span>
     비밀번호·API 키·DB 접속정보는 <strong>절대</strong> 코드나 공개 저장소에 넣지 마세요. Secret/환경변수만 사용합니다.
